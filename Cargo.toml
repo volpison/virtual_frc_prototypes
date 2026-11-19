@@ -1,0 +1,24 @@
+[package]
+name = "virtual_frc_prototypes"
+version = "0.1.0"
+edition = "2021"
+description = "Virtual Frame Rate Control Prototypes — temporal dithering / software FRC on high-Hz monitors"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/volpison/virtual_frc_prototypes"
+readme = "README.md"
+keywords = ["frc", "temporal-dithering", "color-depth", "high-refresh", "wgpu"]
+categories = ["graphics", "multimedia"]
+
+[dependencies]
+winit = "0.29"
+wgpu = "0.19"
+pollster = "0.3"
+env_logger = "0.11"
+log = "0.4"
+bytemuck = { version = "1.14", features = ["derive"] }
+rayon = "1.10"
+
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
