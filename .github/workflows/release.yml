@@ -1,0 +1,48 @@
+# Runs when you push a tag like v1.2.0: checks that the tag matches the project's version,
+# runs the project's tests, and creates a DRAFT release on GitHub (you review and publish it).
+# Nothing is published by itself.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Stop early if the tag and the project's version disagree.
+      - name: Check the tag matches the version
+        env:
+          TAG: ${{ github.ref_name }} # passed as a variable, never pasted into the command
+        run: node scripts/version.mjs check "$TAG"
+
+      - name: Docs check
+        run: node scripts/check-docs.mjs
+
+      # Never ship from code whose tests fail.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Tests
+        run: cargo test
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --draft --generate-notes --title "$TAG"
+
+      # To attach files (an installer, a package), build them above and add:
+      #   gh release upload "$TAG" path/to/file

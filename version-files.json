@@ -1,0 +1,5 @@
+{
+  "files": [
+    { "file": "Cargo.toml", "kind": "toml", "section": "package" }
+  ]
+}

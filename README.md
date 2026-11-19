@@ -1,70 +1,56 @@
-# Virtual Frame Rate Control Prototypes (VirtualFRC)
+# VirtualFRC Prototypes
 
-Software temporal dithering / virtual FRC prototype.
+Software temporal dithering ("virtual FRC") on high-refresh-rate monitors.
 
-Rapidly alternates between two solid colors on a high-refresh-rate monitor so the human visual system integrates them into an intermediate perceived color. This is the same principle used by hardware Frame Rate Control (FRC) in many LCD panels, applied deliberately from the application side.
+Many monitors reach more colors than their 8-bit input by flipping a pixel between two neighbouring shades very quickly (frame rate control, FRC). Your eye averages the flips into a shade in between. VirtualFRC tries the same trick from the program side, on a monitor fast enough to allow it.
 
-## Goals
+**Status: a prototype.** It shows the principle and measures the frame rate. It does not yet give you finer colors in real use. See the [roadmap](ROADMAP.md) for where it is going and what it will never be.
 
-- Demonstrate that high-Hz monitors can be used to synthesize additional color levels via temporal averaging.
-- Measure achieved frame rate vs monitor native refresh rate.
-- Provide both a GPU path (primary) and a future software/SIMD path.
-- Serve as a foundation for more advanced experiments (duty-cycle patterns, multi-frame FRC sequences, gradient tests, etc.).
+## What you can do
 
-## Requirements
+- See two colors flipped on every refresh next to their plain average, and judge the match by eye.
+- Switch between three views: side-by-side, full-window flip and a checkerboard.
+- Compare two ways of drawing: on the graphics card (GPU) or filled by the processor and uploaded (Software).
+- Change the colors, the flip pattern (1:1, 2:1, 3:1) and vsync from the keyboard.
+- Read the measured frame rate and the monitor's refresh rate in the title bar.
 
-- Rust 1.75+ (1.80+ recommended)
-- A GPU with Vulkan, Metal, or DX12 support
-- Ideally a monitor running at 144 Hz or higher (240 Hz+ recommended for cleaner results)
+## Run it
 
-## Build & Run
+You need [Rust](https://www.rust-lang.org/tools/install) 1.75 or newer and a graphics card with Vulkan, Metal or DirectX 12. A monitor at 144 Hz or more works best.
 
-```bash
+```
 cargo run --release
 ```
 
-On Windows / Linux / macOS the same command works.
+The same command works on Windows, Linux and macOS.
 
-## Controls
+## Keys
 
-| Key              | Action                                      |
-|------------------|---------------------------------------------|
-| Arrow keys / WASD| Adjust currently selected color (R/G)       |
-| E / C            | Adjust Blue channel of selected color       |
-| Space            | Toggle which color is being edited (A ↔ B)  |
-| I J K L U M      | Directly edit Color B                       |
-| 1 / 2 / 3        | Set duty cycle (1:1, 2:1, 3:1)              |
-| R                | Reset both colors to defaults               |
-| Esc or Q         | Quit                                        |
+| Key | What it does |
+|---|---|
+| Arrow keys or W A S D | Change red and green of the selected color |
+| E / C | Raise / lower blue of the selected color |
+| Space | Switch between editing color A and color B |
+| I K / J L / U | Change green / red / blue of color B directly |
+| M | Next view (side-by-side, full flip, checkerboard) |
+| B | Switch drawing method (GPU or Software) |
+| 1 / 2 / 3 | Flip pattern 1:1, 2:1 or 3:1 |
+| V | Vsync on or off |
+| [ / ] | Smaller / larger checkerboard squares |
+| R | Reset both colors |
+| Esc or Q | Quit |
 
-The window title continuously shows:
+## Good to know
 
-- Current measured FPS
-- Detected monitor refresh rate
-- Which color is being edited
-- Current duty cycle
-- RGB values of both colors
+This is a perceptual trick, not a real 10-bit or 12-bit screen. Panel response, the monitor's own dithering and personal sensitivity to flicker all change what you see. Do not use it for color-critical work, and stop if you find the flicker uncomfortable.
 
-## Technical Notes
+## Learn more
 
-- Uses `wgpu` with `PresentMode::Immediate` (or `Mailbox`) whenever the driver supports it, so the application is not locked to vsync.
-- A pure clear + present is intentionally used so the GPU path has almost zero overhead.
-- Duty cycle > 1 lets you create finer intermediate levels (classic FRC technique).
-- The effect is most convincing when the two colors are close to each other and the refresh rate is high.
+- [Getting started](docs/user-guide/getting-started.md): the first steps and what to try
+- [All documentation](docs/index.md)
+- [Roadmap](ROADMAP.md) and [changelog](CHANGELOG.md)
+- [Contributing](docs/contributing.md)
 
-## Limitations (honest)
+## Licence
 
-This is a perceptual technique, not true higher bit-depth. It cannot replace a native 10-bit or 12-bit panel for color-critical work. LCD response time, the monitor’s own internal FRC/dithering, and individual sensitivity to temporal artifacts all affect the result.
-
-## Future directions
-
-- Software SIMD presenter (AVX2 / AVX-512 / NEON)
-- Configurable multi-frame FRC patterns
-- Side-by-side comparison (static average vs temporal)
-- Fullscreen exclusive mode
-- Gradient test patterns
-- Export of measured timing data
-
-## License
-
-MIT OR Apache-2.0
+MIT. See [LICENSE-MIT](LICENSE-MIT).

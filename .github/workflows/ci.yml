@@ -1,0 +1,53 @@
+# Runs on every push to main and every pull request.
+# CI cannot open a window or reach a GPU: it proves the code builds, not that the effect works.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Script tests (docs check, version script)
+        run: node --test "scripts/*.test.mjs"
+
+      - name: Docs links and index
+        run: node scripts/check-docs.mjs
+
+  rust:
+    name: rust (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is where most users run it; Linux catches portability mistakes.
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Formatting
+        run: cargo fmt --check
+
+      - name: Lints
+        run: cargo clippy --all-targets
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Tests
+        run: cargo test
