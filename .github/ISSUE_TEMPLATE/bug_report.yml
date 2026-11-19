@@ -1,0 +1,62 @@
+name: Bug report
+description: Something does not work, looks wrong, or freezes
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. What you see depends a lot on your monitor and graphics card, so the details below help.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run ...
+        2. Press ...
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release you downloaded, or the top entry of CHANGELOG.md.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system and graphics card
+      description: For example "Windows 11, NVIDIA RTX 4070, driver 560".
+    validations:
+      required: true
+  - type: input
+    id: monitor
+    attributes:
+      label: Monitor, refresh rate and variable refresh
+      description: Model, the refresh rate you set, and whether G-Sync or FreeSync is on.
+      placeholder: "Example 27 inch, 240 Hz, FreeSync off"
+    validations:
+      required: true
+  - type: input
+    id: mode
+    attributes:
+      label: View, drawing method and vsync
+      description: What the title bar says (for example "Side-by-side, GPU, Fifo").
+    validations:
+      required: false
+  - type: textarea
+    id: log
+    attributes:
+      label: Error text or log
+      description: Paste any error shown in the terminal. Run with RUST_LOG=info for more.
+      render: text
+    validations:
+      required: false
