@@ -170,10 +170,18 @@ impl AppState {
     }
 
     fn color_a_f32(&self) -> [f32; 3] {
-        [self.color_a[0] as f32, self.color_a[1] as f32, self.color_a[2] as f32]
+        [
+            self.color_a[0] as f32,
+            self.color_a[1] as f32,
+            self.color_a[2] as f32,
+        ]
     }
     fn color_b_f32(&self) -> [f32; 3] {
-        [self.color_b[0] as f32, self.color_b[1] as f32, self.color_b[2] as f32]
+        [
+            self.color_b[0] as f32,
+            self.color_b[1] as f32,
+            self.color_b[2] as f32,
+        ]
     }
 
     fn advance_phase(&mut self) {
@@ -249,29 +257,21 @@ fn fill_checkerboard(
     let flip = (phase % 2) == 1;
     let w = width as usize;
 
-    buf.par_chunks_mut(w)
-        .enumerate()
-        .for_each(|(y, row)| {
-            let cy = (y as u32 / cell) as i32;
-            for (x, pixel) in row.iter_mut().enumerate() {
-                let cx = (x as u32 / cell) as i32;
-                let mut checker = (cx + cy) & 1;
-                if flip {
-                    checker = 1 - checker;
-                }
-                *pixel = if checker == 0 { color_a } else { color_b };
+    buf.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+        let cy = (y as u32 / cell) as i32;
+        for (x, pixel) in row.iter_mut().enumerate() {
+            let cx = (x as u32 / cell) as i32;
+            let mut checker = (cx + cy) & 1;
+            if flip {
+                checker = 1 - checker;
             }
-        });
+            *pixel = if checker == 0 { color_a } else { color_b };
+        }
+    });
 }
 
 /// Side-by-side: left half temporal solid, right half static average.
-fn fill_side_by_side(
-    buf: &mut [u32],
-    width: u32,
-    _height: u32,
-    temporal: u32,
-    static_avg: u32,
-) {
+fn fill_side_by_side(buf: &mut [u32], width: u32, _height: u32, temporal: u32, static_avg: u32) {
     let mid = (width / 2) as usize;
     let w = width as usize;
 
@@ -354,7 +354,11 @@ impl<'a> GpuState<'a> {
             .await
             .expect("adapter");
 
-        info!("Using GPU: {} ({:?})", adapter.get_info().name, adapter.get_info().backend);
+        info!(
+            "Using GPU: {} ({:?})",
+            adapter.get_info().name,
+            adapter.get_info().backend
+        );
 
         let (device, queue) = adapter
             .request_device(
@@ -392,9 +396,15 @@ impl<'a> GpuState<'a> {
 
         // ---- shared fullscreen triangle ----
         let vertices: [Vertex; 3] = [
-            Vertex { position: [-1.0, -1.0] },
-            Vertex { position: [3.0, -1.0] },
-            Vertex { position: [-1.0, 3.0] },
+            Vertex {
+                position: [-1.0, -1.0],
+            },
+            Vertex {
+                position: [3.0, -1.0],
+            },
+            Vertex {
+                position: [-1.0, 3.0],
+            },
         ];
         let vertex_buffer = {
             use wgpu::util::DeviceExt;
@@ -637,27 +647,29 @@ impl<'a> GpuState<'a> {
         self.soft_texture_view = self.soft_texture.create_view(&Default::default());
 
         // Rebuild soft bind group (texture view changed)
-        let soft_bgl = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let soft_bgl = self
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
         self.soft_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &soft_bgl,
@@ -943,86 +955,85 @@ fn main() {
             elwt.set_control_flow(ControlFlow::Poll);
 
             match event {
-                Event::WindowEvent {
-                    event,
-                    window_id,
-                } if window_id == window.id() => match event {
-                    WindowEvent::CloseRequested => elwt.exit(),
-                    WindowEvent::Resized(s) => gpu.resize(s),
-                    WindowEvent::KeyboardInput {
-                        event:
-                            KeyEvent {
-                                logical_key,
-                                state: key_state,
-                                repeat: false,
-                                ..
-                            },
-                        ..
-                    } if key_state == ElementState::Pressed => {
-                        match &logical_key {
-                            Key::Named(NamedKey::Escape) => elwt.exit(),
-                            Key::Named(NamedKey::Space) => state.editing_a = !state.editing_a,
-                            Key::Named(NamedKey::ArrowUp) => state.adjust_channel(1, STEP),
-                            Key::Named(NamedKey::ArrowDown) => state.adjust_channel(1, -STEP),
-                            Key::Named(NamedKey::ArrowLeft) => state.adjust_channel(0, -STEP),
-                            Key::Named(NamedKey::ArrowRight) => state.adjust_channel(0, STEP),
-                            Key::Character(c) => match c.as_str() {
-                                "q" | "Q" => elwt.exit(),
-                                "m" | "M" => {
-                                    state.mode = state.mode.next();
-                                    info!("Mode → {}", state.mode.name());
-                                }
-                                "b" | "B" => {
-                                    state.backend = state.backend.toggle();
-                                    info!("Backend → {}", state.backend.name());
-                                }
-                                "1" => state.duty_a = 1,
-                                "2" => state.duty_a = 2,
-                                "3" => state.duty_a = 3,
-                                "v" | "V" => {
-                                    state.use_vsync = !state.use_vsync;
-                                    gpu.set_present_mode(state.use_vsync);
-                                }
-                                "[" => state.cell_size = (state.cell_size / 2).max(1),
-                                "]" => state.cell_size = (state.cell_size * 2).min(128),
-                                "r" | "R" => {
-                                    state.color_a = DEFAULT_COLOR_A;
-                                    state.color_b = DEFAULT_COLOR_B;
-                                }
-                                "w" | "W" => state.adjust_channel(1, STEP),
-                                "s" | "S" => state.adjust_channel(1, -STEP),
-                                "a" | "A" => state.adjust_channel(0, -STEP),
-                                "d" | "D" => state.adjust_channel(0, STEP),
-                                "e" | "E" => state.adjust_channel(2, STEP),
-                                "c" | "C" => state.adjust_channel(2, -STEP),
-                                "i" | "I" => {
-                                    state.editing_a = false;
-                                    state.adjust_channel(1, STEP);
-                                }
-                                "k" | "K" => {
-                                    state.editing_a = false;
-                                    state.adjust_channel(1, -STEP);
-                                }
-                                "j" | "J" => {
-                                    state.editing_a = false;
-                                    state.adjust_channel(0, -STEP);
-                                }
-                                "l" | "L" => {
-                                    state.editing_a = false;
-                                    state.adjust_channel(0, STEP);
-                                }
-                                "u" | "U" => {
-                                    state.editing_a = false;
-                                    state.adjust_channel(2, STEP);
-                                }
+                Event::WindowEvent { event, window_id } if window_id == window.id() => {
+                    match event {
+                        WindowEvent::CloseRequested => elwt.exit(),
+                        WindowEvent::Resized(s) => gpu.resize(s),
+                        WindowEvent::KeyboardInput {
+                            event:
+                                KeyEvent {
+                                    logical_key,
+                                    state: key_state,
+                                    repeat: false,
+                                    ..
+                                },
+                            ..
+                        } if key_state == ElementState::Pressed => {
+                            match &logical_key {
+                                Key::Named(NamedKey::Escape) => elwt.exit(),
+                                Key::Named(NamedKey::Space) => state.editing_a = !state.editing_a,
+                                Key::Named(NamedKey::ArrowUp) => state.adjust_channel(1, STEP),
+                                Key::Named(NamedKey::ArrowDown) => state.adjust_channel(1, -STEP),
+                                Key::Named(NamedKey::ArrowLeft) => state.adjust_channel(0, -STEP),
+                                Key::Named(NamedKey::ArrowRight) => state.adjust_channel(0, STEP),
+                                Key::Character(c) => match c.as_str() {
+                                    "q" | "Q" => elwt.exit(),
+                                    "m" | "M" => {
+                                        state.mode = state.mode.next();
+                                        info!("Mode → {}", state.mode.name());
+                                    }
+                                    "b" | "B" => {
+                                        state.backend = state.backend.toggle();
+                                        info!("Backend → {}", state.backend.name());
+                                    }
+                                    "1" => state.duty_a = 1,
+                                    "2" => state.duty_a = 2,
+                                    "3" => state.duty_a = 3,
+                                    "v" | "V" => {
+                                        state.use_vsync = !state.use_vsync;
+                                        gpu.set_present_mode(state.use_vsync);
+                                    }
+                                    "[" => state.cell_size = (state.cell_size / 2).max(1),
+                                    "]" => state.cell_size = (state.cell_size * 2).min(128),
+                                    "r" | "R" => {
+                                        state.color_a = DEFAULT_COLOR_A;
+                                        state.color_b = DEFAULT_COLOR_B;
+                                    }
+                                    "w" | "W" => state.adjust_channel(1, STEP),
+                                    "s" | "S" => state.adjust_channel(1, -STEP),
+                                    "a" | "A" => state.adjust_channel(0, -STEP),
+                                    "d" | "D" => state.adjust_channel(0, STEP),
+                                    "e" | "E" => state.adjust_channel(2, STEP),
+                                    "c" | "C" => state.adjust_channel(2, -STEP),
+                                    "i" | "I" => {
+                                        state.editing_a = false;
+                                        state.adjust_channel(1, STEP);
+                                    }
+                                    "k" | "K" => {
+                                        state.editing_a = false;
+                                        state.adjust_channel(1, -STEP);
+                                    }
+                                    "j" | "J" => {
+                                        state.editing_a = false;
+                                        state.adjust_channel(0, -STEP);
+                                    }
+                                    "l" | "L" => {
+                                        state.editing_a = false;
+                                        state.adjust_channel(0, STEP);
+                                    }
+                                    "u" | "U" => {
+                                        state.editing_a = false;
+                                        state.adjust_channel(2, STEP);
+                                    }
+                                    _ => {}
+                                },
                                 _ => {}
-                            },
-                            _ => {}
+                            }
+                            window.set_title(&state.title_string());
                         }
-                        window.set_title(&state.title_string());
+                        _ => {}
                     }
-                    _ => {}
-                },
+                }
 
                 Event::AboutToWait => {
                     let now = Instant::now();
