@@ -6,7 +6,7 @@ The template's checklist, with this project's status. Items marked `[x]` are don
 
 - [x] Replace the README with the project's own leaflet.
 - [x] Fill in [ROADMAP.md](../../ROADMAP.md), above all **What it is not**.
-- [ ] Add a `LICENSE-APACHE` file. `Cargo.toml` says "MIT OR Apache-2.0"; only [LICENSE-MIT](../../LICENSE-MIT) is here, because the Apache text could not be fetched in the author's environment. Copy it from <https://www.apache.org/licenses/LICENSE-2.0.txt>.
+- [x] Licence: MIT, see [LICENSE-MIT](../../LICENSE-MIT).
 - [x] Replace [Getting started](../user-guide/getting-started.md) with the project's first steps.
 - [x] Write [Architecture](architecture.md).
 - [x] File format page: removed, because the program saves no files. If that changes, add a page and start at `schema_version` 1.

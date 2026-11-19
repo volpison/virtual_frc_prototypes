@@ -53,4 +53,4 @@ This is a perceptual trick, not a real 10-bit or 12-bit screen. Panel response, 
 
 ## Licence
 
-MIT or Apache-2.0, at your option. See [LICENSE-MIT](LICENSE-MIT).
+MIT. See [LICENSE-MIT](LICENSE-MIT).

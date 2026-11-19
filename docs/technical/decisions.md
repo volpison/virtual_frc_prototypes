@@ -86,11 +86,11 @@ Decided: this repository stays a prototype and a reusable core. A virtual displa
 Why: a program can only control its own window. A system-wide layer adds a frame of latency, and games in exclusive fullscreen and protected video may bypass it.
 Left out: starting the driver now.
 
-## Licence is MIT or Apache-2.0 (2026-11)
+## Licence is MIT only (2026-11)
 
-Decided: keep the licence stated in `Cargo.toml`, "MIT OR Apache-2.0".
-Why: it is the common choice for Rust projects and was already chosen. Only the MIT text is in the repository for now (see [the checklist](new-project-checklist.md)).
-Left out: a stricter licence.
+Decided: the project is under the MIT licence alone. `Cargo.toml` said "MIT OR Apache-2.0" when the project was received; the owner does not want the Apache licence, so it was dropped.
+Why: MIT is short and permissive, and nothing here needs the explicit patent grant that Apache adds.
+Left out: dual licensing. Revisit if the core becomes a library that companies want a patent grant from.
 
 ## CI runs on Windows and Linux (2026-11)
 
