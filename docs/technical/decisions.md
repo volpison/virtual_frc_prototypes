@@ -145,3 +145,9 @@ Left out: a log file and an export of timing data (listed under later), and meas
 Decided: the counter that selects the pattern's frame starts over at 720,720, a multiple of every cycle length from 2 to 16.
 Why: wrapping at 2^32 made a cycle that does not divide it (3 or 5 frames) jump once after about 190 days.
 Left out: longer cycles than 16 frames; revisit with the dither step.
+
+## The gradient test pattern is an ordered dither drawn by the processor (2026-11)
+
+Decided: the gradient view ramps each channel from color A to color B across the window. The top half rounds to the nearest code (bands); the bottom half rounds up or down by a 4 by 4 Bayer threshold that shifts by four steps each frame, so the pattern repeats every 4 frames (4 divides 720,720). It lives in `src/frc/gradient.rs` and is drawn by the CPU path in both drawing methods.
+Why: a gradient shows the effect to the eye far better than two nearly equal flat colors. An ordered dither is simple and exactly testable (a block averages to the value on every frame). A CPU version needs no new shader, and a shader error only shows at run time, which cannot be checked here.
+Left out: a GPU version (revisit with step 7), blue noise (step 7), a switch for time-only flipping, and making the plain half and the dithered half share light-space averaging (the ramp is in codes, not light).

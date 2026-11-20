@@ -2,6 +2,8 @@
 
 use rayon::prelude::*;
 
+use crate::frc::gradient;
+
 /// Fill a whole buffer with a solid color using multi-threaded stores.
 /// On x86_64 we use wide stores where possible; otherwise scalar.
 pub(crate) fn fill_solid(buf: &mut [u32], color: u32) {
@@ -58,5 +60,21 @@ pub(crate) fn fill_side_by_side(
         for (x, pixel) in row.iter_mut().enumerate() {
             *pixel = if x < mid { temporal } else { static_avg };
         }
+    });
+}
+
+/// Multi-threaded gradient test pattern: one row per task. The top half is plain, the bottom
+/// half is dithered (see `frc::gradient`).
+pub(crate) fn fill_gradient(
+    buf: &mut [u32],
+    width: u32,
+    height: u32,
+    from: [u8; 3],
+    to: [u8; 3],
+    phase: u32,
+) {
+    let w = (width as usize).max(1);
+    buf.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+        gradient::fill_row(row, y as u32, height, from, to, phase);
     });
 }

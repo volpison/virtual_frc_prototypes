@@ -8,7 +8,7 @@ use log::info;
 use winit::window::Window;
 
 use crate::frc::color;
-use crate::software::{fill_checkerboard, fill_side_by_side, fill_solid};
+use crate::software::{fill_checkerboard, fill_gradient, fill_side_by_side, fill_solid};
 use crate::state::{AppState, DisplayMode};
 use present::choose_present_mode;
 use shaders::{GPU_SHADER, SOFT_SHADER};
@@ -509,6 +509,16 @@ impl<'a> GpuState<'a> {
                     ca,
                     cb,
                     state.cell_size,
+                    state.frame_phase,
+                );
+            }
+            DisplayMode::Gradient => {
+                fill_gradient(
+                    &mut self.cpu_pixels,
+                    w,
+                    h,
+                    state.color_a,
+                    state.color_b,
                     state.frame_phase,
                 );
             }

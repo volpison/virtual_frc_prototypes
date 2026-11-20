@@ -13,7 +13,10 @@ use winit::{
 };
 
 use crate::render::GpuState;
-use crate::state::{AppState, Backend, COARSE_STEP, DEFAULT_COLOR_A, DEFAULT_COLOR_B, STEP};
+use crate::state::{
+    AppState, Backend, DisplayMode, COARSE_STEP, DEFAULT_COLOR_A, DEFAULT_COLOR_B,
+    GRADIENT_COLOR_A, GRADIENT_COLOR_B, STEP,
+};
 
 pub(crate) fn run() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -83,9 +86,13 @@ pub(crate) fn run() {
                             }
                         }
                         WindowEvent::RedrawRequested => {
-                            let result = match state.backend {
-                                Backend::Gpu => gpu.render_gpu(&state),
-                                Backend::Software => gpu.render_software(&state),
+                            // The gradient is always drawn by the CPU path (no shader for it).
+                            let on_cpu = state.backend == Backend::Software
+                                || state.mode == DisplayMode::Gradient;
+                            let result = if on_cpu {
+                                gpu.render_software(&state)
+                            } else {
+                                gpu.render_gpu(&state)
                             };
                             match result {
                                 Ok(()) => {
@@ -142,6 +149,12 @@ pub(crate) fn run() {
                                     "q" | "Q" => elwt.exit(),
                                     "m" | "M" => {
                                         state.mode = state.mode.next();
+                                        info!("Mode → {}", state.mode.name());
+                                    }
+                                    "g" | "G" => {
+                                        state.color_a = GRADIENT_COLOR_A;
+                                        state.color_b = GRADIENT_COLOR_B;
+                                        state.mode = DisplayMode::Gradient;
                                         info!("Mode → {}", state.mode.name());
                                     }
                                     "b" | "B" => {

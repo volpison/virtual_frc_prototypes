@@ -11,8 +11,8 @@ The program is split by responsibility (the split was a pure move: no behaviour 
 | `src/main.rs` | The crate's documentation (the keys), the module list and the entry point |
 | `src/app.rs` | The window, the key handling and the frame loop: each frame ends by asking for the next one, and showing it waits for the monitor |
 | `src/state.rs` | What the program is doing: the two colors as 8-bit codes, flip pattern setting, view, drawing method, frame counts and the title text |
-| `src/frc/` | The pure rules, with unit tests: `pattern.rs` (which color a frame shows), `timing.rs` (measuring missed refreshes and frame-time spread), `color.rs` (sRGB encoding, rounding to an 8-bit code, the light-space mix of two codes, the value handed to the card, packing a pixel) |
-| `src/software.rs` | The software path: filling a CPU buffer with the 8-bit codes of the colors (no window, no GPU) |
+| `src/frc/` | The pure rules, with unit tests: `pattern.rs` (which color a frame shows), `timing.rs` (measuring missed refreshes and frame-time spread), `color.rs` (sRGB encoding, rounding to an 8-bit code, the light-space mix of two codes, the value handed to the card, packing a pixel), `gradient.rs` (the test ramp: plain and ordered-dither rows) |
+| `src/software.rs` | The software path: filling a CPU buffer with the 8-bit codes of the colors or the gradient, one row per rayon task (no window, no GPU) |
 | `src/render/mod.rs` | The wgpu state: surface, both pipelines, resize and the two render paths |
 | `src/render/shaders.rs` | The two WGSL shaders |
 | `src/render/present.rs` | Choosing the present mode (vsync or not) |
@@ -32,7 +32,7 @@ The module is called `frc`, not `core`, because `core` is the name of Rust's own
   platform               frame timing, fullscreen, refresh-rate and variable-refresh checks
 ```
 
-Still to come: dither thresholds and the conversion of colors to 8 bits in `src/frc/` (roadmap steps 4 and 6), and `src/platform/` for operating-system specific timing and display queries. Later `frc` can become its own crate; its tests then move from the files into `tests/`.
+Still to come: the blue-noise dither (roadmap step 7), and `src/platform/` for operating-system specific timing and display queries. Later `frc` can become its own crate; its tests then move from the files into `tests/`.
 
 ## How to add a feature
 

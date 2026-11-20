@@ -10,12 +10,17 @@ pub(crate) const DEFAULT_COLOR_B: [u8; 3] = [128, 128, 128];
 /// How far one key press moves a code, and how far with Shift held.
 pub(crate) const STEP: i32 = 1;
 pub(crate) const COARSE_STEP: i32 = 10;
+/// The two grey codes the gradient view starts from (key G): 16 codes apart, so the plain half
+/// shows 17 bands and the dithered half shows the steps between them.
+pub(crate) const GRADIENT_COLOR_A: [u8; 3] = [96, 96, 96];
+pub(crate) const GRADIENT_COLOR_B: [u8; 3] = [112, 112, 112];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DisplayMode {
     SideBySide = 0,
     FullTemporal = 1,
     Checkerboard = 2,
+    Gradient = 3,
 }
 
 impl DisplayMode {
@@ -23,7 +28,8 @@ impl DisplayMode {
         match self {
             DisplayMode::SideBySide => DisplayMode::FullTemporal,
             DisplayMode::FullTemporal => DisplayMode::Checkerboard,
-            DisplayMode::Checkerboard => DisplayMode::SideBySide,
+            DisplayMode::Checkerboard => DisplayMode::Gradient,
+            DisplayMode::Gradient => DisplayMode::SideBySide,
         }
     }
     pub(crate) fn name(self) -> &'static str {
@@ -31,6 +37,7 @@ impl DisplayMode {
             DisplayMode::SideBySide => "Side-by-side",
             DisplayMode::FullTemporal => "Full temporal",
             DisplayMode::Checkerboard => "Checkerboard",
+            DisplayMode::Gradient => "Gradient (processor)",
         }
     }
 }
@@ -51,7 +58,7 @@ impl Backend {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Backend::Gpu => "GPU",
-            Backend::Software => "Software+SIMD",
+            Backend::Software => "Software",
         }
     }
 }
@@ -246,5 +253,24 @@ mod tests {
     fn the_title_shows_both_colors_as_codes() {
         let title = state().title_string();
         assert!(title.contains("A 127,127,127  B 128,128,128"), "{title}");
+    }
+
+    #[test]
+    fn the_views_cycle_through_the_gradient_and_back() {
+        let mut mode = DisplayMode::SideBySide;
+        let mut seen = vec![];
+        for _ in 0..4 {
+            mode = mode.next();
+            seen.push(mode.name());
+        }
+        assert_eq!(seen.last(), Some(&"Side-by-side"));
+        assert!(seen.contains(&"Gradient (processor)"));
+    }
+
+    #[test]
+    fn the_gradient_colors_are_sixteen_codes_apart() {
+        for ch in 0..3 {
+            assert_eq!(GRADIENT_COLOR_B[ch] - GRADIENT_COLOR_A[ch], 16);
+        }
     }
 }
