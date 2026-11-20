@@ -13,6 +13,18 @@ pub fn shows_a(phase: u32, duty_a: u32) -> bool {
     }
 }
 
+/// The share of frames that show color A (0.0 to 1.0), for the same `duty_a` as [`shows_a`].
+///
+/// 1:1 gives one half, 2:1 two thirds, 3:1 three quarters. This is the weight of A in the
+/// average the eye should see.
+pub fn share_a(duty_a: u32) -> f64 {
+    if duty_a <= 1 {
+        0.5
+    } else {
+        f64::from(duty_a) / (f64::from(duty_a) + 1.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -38,6 +50,26 @@ mod tests {
             best = best.max(len);
         }
         best
+    }
+
+    #[test]
+    fn share_a_matches_the_frames_that_show_a() {
+        for duty in 0..=7u32 {
+            let frames = cycle(duty) * 100;
+            let counted = (0..frames).filter(|&p| shows_a(p, duty)).count() as f64;
+            assert!(
+                (share_a(duty) - counted / f64::from(frames)).abs() < 1e-12,
+                "duty {duty}"
+            );
+        }
+    }
+
+    #[test]
+    fn share_a_has_the_known_values() {
+        assert_eq!(share_a(0), 0.5);
+        assert_eq!(share_a(1), 0.5);
+        assert!((share_a(2) - 2.0 / 3.0).abs() < 1e-15);
+        assert_eq!(share_a(3), 0.75);
     }
 
     #[test]

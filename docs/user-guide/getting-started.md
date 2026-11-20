@@ -12,10 +12,12 @@ If you have a monitor of 144 Hz or more, make sure it is set to its highest refr
 
 ## What should I try?
 
-1. Start in the **side-by-side** view. The left half flips between color A and color B. The right half is their plain average. From a normal distance, do the halves look the same?
-2. Press **Space** to choose which color you are editing, then use the arrow keys (and **E** / **C** for blue) to move the two colors closer together. The closer they are, the less flicker you see.
-3. Press **1**, **2** or **3** to change the flip pattern (equal time, or color A twice or three times as long as B). Press **M** for the other views.
-4. Press **B** to compare drawing on the graphics card with drawing by the processor. They should look the same.
+The two colors, A and B, are shown in the title bar as codes from 0 to 255 for red, green and blue (for example `A 127,127,127  B 128,128,128`). They start one step apart, which is the case this technique is for.
+
+1. Start in the **side-by-side** view. The left half flips between A and B on every refresh. The right half is the closest plain color to what your eye should see from that flipping. One step apart, the flicker is too faint to see, and both halves should look the same.
+2. Press **Space** to choose which color you are editing, then use the arrow keys (and **E** / **C** for blue) to move it. One press moves it by 1; hold **Shift** to move it by 10. Move A and B further apart and watch the flicker grow: the gap at which you start to see it is what your monitor and your eyes allow.
+3. Press **1**, **2** or **3** to change the flip pattern (equal time, or color A twice or three times as long as B). The right half follows, so it stays the matching average. Press **M** for the other views.
+4. Press **B** to compare drawing on the graphics card with drawing by the processor. They should look the same, dark colors included.
 5. Press **V** to turn vsync off and on. Watch the frame rate in the title bar.
 
 The full list of keys is in the [README](../../README.md#keys). **R** puts both colors back to their starting values and **Esc** or **Q** quits.

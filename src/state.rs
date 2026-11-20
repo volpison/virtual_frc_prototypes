@@ -4,9 +4,13 @@ use std::time::{Duration, Instant};
 
 use crate::frc::{color, pattern};
 
-pub(crate) const DEFAULT_COLOR_A: [f64; 3] = [0.40, 0.70, 0.30];
-pub(crate) const DEFAULT_COLOR_B: [f64; 3] = [0.30, 0.55, 0.80];
-pub(crate) const STEP: f64 = 0.02;
+/// The two colors flipped between, as 8-bit codes. They start one step apart, which is
+/// the case frame rate control is for.
+pub(crate) const DEFAULT_COLOR_A: [u8; 3] = [127, 127, 127];
+pub(crate) const DEFAULT_COLOR_B: [u8; 3] = [128, 128, 128];
+/// How far one key press moves a code, and how far with Shift held.
+pub(crate) const STEP: i32 = 1;
+pub(crate) const COARSE_STEP: i32 = 10;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DisplayMode {
@@ -82,8 +86,8 @@ impl Metrics {
 }
 
 pub(crate) struct AppState {
-    pub(crate) color_a: [f64; 3],
-    pub(crate) color_b: [f64; 3],
+    pub(crate) color_a: [u8; 3],
+    pub(crate) color_b: [u8; 3],
     pub(crate) editing_a: bool,
     pub(crate) duty_a: u32,
     pub(crate) frame_phase: u32,
@@ -112,48 +116,137 @@ impl AppState {
         }
     }
 
-    pub(crate) fn temporal_color(&self) -> [f32; 3] {
-        let use_a = pattern::shows_a(self.frame_phase, self.duty_a);
-        color::select(use_a, self.color_a, self.color_b)
+    /// The color this frame shows on the flipping side.
+    pub(crate) fn temporal_color(&self) -> [u8; 3] {
+        if pattern::shows_a(self.frame_phase, self.duty_a) {
+            self.color_a
+        } else {
+            self.color_b
+        }
     }
 
-    pub(crate) fn static_average(&self) -> [f32; 3] {
-        color::average(self.color_a, self.color_b)
-    }
-
-    pub(crate) fn color_a_f32(&self) -> [f32; 3] {
-        color::to_f32(self.color_a)
-    }
-    pub(crate) fn color_b_f32(&self) -> [f32; 3] {
-        color::to_f32(self.color_b)
+    /// The plain color on the other side: the nearest 8-bit color to what the eye should
+    /// see from the flipping, weighted by how often A is shown.
+    pub(crate) fn static_average(&self) -> [u8; 3] {
+        color::mix(self.color_a, self.color_b, pattern::share_a(self.duty_a))
     }
 
     pub(crate) fn advance_phase(&mut self) {
         self.frame_phase = self.frame_phase.wrapping_add(1);
     }
 
-    pub(crate) fn adjust_channel(&mut self, channel: usize, delta: f64) {
+    /// Move one channel of the selected color by `delta` codes, staying within 0 to 255.
+    pub(crate) fn adjust_channel(&mut self, channel: usize, delta: i32) {
         let color = if self.editing_a {
             &mut self.color_a
         } else {
             &mut self.color_b
         };
-        color[channel] = (color[channel] + delta).clamp(0.0, 1.0);
+        color[channel] = (i32::from(color[channel]) + delta).clamp(0, 255) as u8;
     }
 
     pub(crate) fn title_string(&self) -> String {
         let which = if self.editing_a { "A" } else { "B" };
         let present = if self.use_vsync { "Fifo" } else { "Imm" };
         format!(
-            "VirtualFRC  |  {:.0} FPS  |  {}  |  {}  |  {}  |  edit {}  |  duty {}:1  |  cell {}  |  frames:{}",
+            "VirtualFRC  |  {:.0} FPS  |  {}  |  {}  |  {}  |  edit {}  |  A {},{},{}  B {},{},{}  |  duty {}:1  |  cell {}  |  frames:{}",
             self.metrics.current_fps,
             self.backend.name(),
             present,
             self.mode.name(),
             which,
+            self.color_a[0],
+            self.color_a[1],
+            self.color_a[2],
+            self.color_b[0],
+            self.color_b[1],
+            self.color_b[2],
             self.duty_a,
             self.cell_size,
             self.metrics.total_frames,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn state() -> AppState {
+        AppState::new(144.0)
+    }
+
+    #[test]
+    fn the_default_colors_are_one_code_apart_in_every_channel() {
+        for ch in 0..3 {
+            assert_eq!(DEFAULT_COLOR_B[ch] - DEFAULT_COLOR_A[ch], 1);
+        }
+    }
+
+    #[test]
+    fn a_key_press_moves_the_selected_color_by_the_step() {
+        let mut s = state();
+        s.adjust_channel(0, STEP);
+        s.adjust_channel(2, -COARSE_STEP);
+        assert_eq!(s.color_a, [128, 127, 117]);
+        assert_eq!(s.color_b, DEFAULT_COLOR_B, "the other color is untouched");
+        s.editing_a = false;
+        s.adjust_channel(1, COARSE_STEP);
+        assert_eq!(s.color_b, [128, 138, 128]);
+    }
+
+    #[test]
+    fn codes_stop_at_zero_and_at_255() {
+        let mut s = state();
+        s.adjust_channel(0, -1000);
+        s.adjust_channel(1, 1000);
+        assert_eq!(s.color_a, [0, 255, 127]);
+        s.adjust_channel(0, -STEP);
+        s.adjust_channel(1, STEP);
+        assert_eq!(s.color_a, [0, 255, 127]);
+    }
+
+    #[test]
+    fn the_flipping_side_follows_the_pattern() {
+        let mut s = state();
+        assert_eq!(s.temporal_color(), DEFAULT_COLOR_A, "frame 0 shows A");
+        s.advance_phase();
+        assert_eq!(s.temporal_color(), DEFAULT_COLOR_B, "1:1 shows B next");
+        s.duty_a = 3;
+        s.frame_phase = 3;
+        assert_eq!(
+            s.temporal_color(),
+            DEFAULT_COLOR_B,
+            "3:1 shows B on the 4th frame"
+        );
+        s.frame_phase = 2;
+        assert_eq!(s.temporal_color(), DEFAULT_COLOR_A);
+    }
+
+    #[test]
+    fn the_plain_side_follows_how_often_a_is_shown() {
+        let mut s = state();
+        s.color_a = [255; 3];
+        s.color_b = [0; 3];
+        let half = s.static_average()[0];
+        s.duty_a = 3;
+        let three_quarters = s.static_average()[0];
+        assert_eq!(half, 188, "equal shares of white and black light");
+        assert!(
+            three_quarters > half,
+            "more A is brighter: {three_quarters}"
+        );
+    }
+
+    #[test]
+    fn the_plain_side_is_one_of_the_two_codes_when_they_are_a_step_apart() {
+        let m = state().static_average()[0];
+        assert!(m == 127 || m == 128, "{m}");
+    }
+
+    #[test]
+    fn the_title_shows_both_colors_as_codes() {
+        let title = state().title_string();
+        assert!(title.contains("A 127,127,127  B 128,128,128"), "{title}");
     }
 }

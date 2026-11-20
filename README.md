@@ -11,7 +11,7 @@ Many monitors reach more colors than their 8-bit input by flipping a pixel betwe
 - See two colors flipped on every refresh next to their plain average, and judge the match by eye.
 - Switch between three views: side-by-side, full-window flip and a checkerboard.
 - Compare two ways of drawing: on the graphics card (GPU) or filled by the processor and uploaded (Software).
-- Change the colors, the flip pattern (1:1, 2:1, 3:1) and vsync from the keyboard.
+- Set the two colors as 8-bit codes (0 to 255), starting one step apart, and change the flip pattern (1:1, 2:1, 3:1) and vsync from the keyboard.
 - Read the measured frame rate and the monitor's refresh rate in the title bar.
 
 ## Run it
@@ -28,10 +28,10 @@ The same command works on Windows, Linux and macOS.
 
 | Key | What it does |
 |---|---|
-| Arrow keys or W A S D | Change red and green of the selected color |
-| E / C | Raise / lower blue of the selected color |
+| Arrow keys or W A S D | Change red and green of the selected color by 1 (hold Shift: by 10) |
+| E / C | Raise / lower blue of the selected color (also with Shift) |
 | Space | Switch between editing color A and color B |
-| I K / J L / U | Change green / red / blue of color B directly |
+| I K / J L / U | Change green / red / blue of color B directly (also with Shift) |
 | M | Next view (side-by-side, full flip, checkerboard) |
 | B | Switch drawing method (GPU or Software) |
 | 1 / 2 / 3 | Flip pattern 1:1, 2:1 or 3:1 |
