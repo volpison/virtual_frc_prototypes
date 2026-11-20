@@ -17,7 +17,7 @@ A prototype that explores software temporal dithering on high-refresh monitors: 
 
 ## Now
 
-Step 6: a gradient test pattern, to show the effect better than two flat halves. The list of [known issues](docs/technical/known-issues.md) is the backlog behind the steps below.
+Step 7: replace the duty-cycle and checkerboard demos with a spatiotemporal blue-noise dither. The list of [known issues](docs/technical/known-issues.md) is the backlog behind the steps below.
 
 ## Next
 
@@ -31,7 +31,7 @@ Each step is its own pull request. A step that only moves code changes no behavi
    - 4a. ✅ Own the rounding to 8 bits: the program picks the exact codes, and the software path no longer bands dark colors.
    - 4b. ✅ Make the demo flip neighbouring codes instead of two distant colors (colors edited as 8-bit codes, 0 to 255).
 5. ✅ Pace the program by the monitor: advance the pattern once per frame actually shown, stop the busy loop, measure frame-time spread and missed frames.
-6. A gradient test pattern: a smooth ramp shown with and without the flipping, to make the effect visible.
+6. ✅ A gradient test pattern: a smooth ramp shown with and without the flipping, to make the effect visible.
 7. Replace the duty-cycle and checkerboard demos with a spatiotemporal blue-noise dither.
 8. Fullscreen mode and a warning for variable refresh.
 9. Reuse pre-computed frames for still images, and measure the CPU and power saving.
