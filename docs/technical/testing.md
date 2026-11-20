@@ -15,12 +15,14 @@ node scripts/check-docs.mjs          # links, heading links and the docs index
 
 The pure rules in `src/frc/` are tested, with the tests in the same files under `#[cfg(test)]` (the program is a binary crate, so a separate `tests/` folder cannot reach them yet; it will once `frc` is a library crate):
 
-- `pattern.rs`: A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
-- `color.rs`: choosing A or B; the average of two colors is symmetric, lies between them, and black with white gives grey; sRGB encoding and decoding agree with known values and undo each other; every one of the 256 codes survives the trip through light and back; rounding never goes down as light goes up; dark colors get their own codes; the value handed to the card puts exactly the wanted code on screen for both kinds of surface; a pixel is packed in the right byte order.
+- `pattern.rs`: the share of A matches the frames that show it (and has the known values 1/2, 2/3, 3/4); A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
+- `color.rs`: the mix of two codes is made in light (half black and half white is code 188), gives back A or B at the ends, keeps equal colors, lies between the two and follows the share; sRGB encoding and decoding agree with known values and undo each other; every one of the 256 codes survives the trip through light and back; rounding never goes down as light goes up; dark colors get their own codes; the value handed to the card for a code puts exactly that code on screen for both kinds of surface; a pixel is packed in the right byte order.
 
-Still without tests, because they are tied to the window or the GPU: `state.rs`, `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle.
+- `state.rs`: default colors one code apart, key steps and the 0 to 255 limits, the flipping side follows the pattern, the plain side follows the share, the title shows the codes.
 
-Since `frc` uses no other crate, its tests also run with plain `rustc --test` and no download.
+Still without tests, because they are tied to the window or the GPU: `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle.
+
+Since `frc` and `state.rs` use no other crate, their tests also run with plain `rustc --test` and no download (compile a small file that includes `frc/mod.rs` and `state.rs` as modules).
 
 The window, the GPU path and the look of the effect cannot be checked by a test. They are checked by the build, and by a person running the program on a real monitor.
 

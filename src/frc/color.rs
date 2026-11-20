@@ -1,27 +1,4 @@
-//! Colors as three numbers (red, green, blue), each from 0.0 to 1.0.
-
-/// A color in the precision the program edits it in.
-pub type Rgb64 = [f64; 3];
-
-/// The same color in the precision the graphics card takes.
-pub fn to_f32(c: Rgb64) -> [f32; 3] {
-    [c[0] as f32, c[1] as f32, c[2] as f32]
-}
-
-/// The color a frame shows: A when `use_a` is true, otherwise B.
-pub fn select(use_a: bool, a: Rgb64, b: Rgb64) -> [f32; 3] {
-    to_f32(if use_a { a } else { b })
-}
-
-/// The plain average of two colors, channel by channel: what the eye should see if
-/// the two are flipped fast enough and in equal shares.
-pub fn average(a: Rgb64, b: Rgb64) -> [f32; 3] {
-    [
-        ((a[0] + b[0]) * 0.5) as f32,
-        ((a[1] + b[1]) * 0.5) as f32,
-        ((a[2] + b[2]) * 0.5) as f32,
-    ]
-}
+//! Colors as three 8-bit codes (red, green, blue), each from 0 to 255, and the light they give.
 
 /// A light level (linear, 0.0 to 1.0) as the encoded value a screen expects (sRGB).
 pub fn srgb_encode(linear: f64) -> f64 {
@@ -50,17 +27,30 @@ pub fn to_code(linear: f64) -> u8 {
     (srgb_encode(linear) * 255.0 + 0.5) as u8
 }
 
-/// The number to hand the graphics card so that it puts exactly `to_code(linear)` on screen.
+/// The number to hand the graphics card so that it puts exactly `code` on screen.
 ///
 /// A surface that stores plain codes (`surface_is_srgb` false) takes the code over 255. A surface
 /// that encodes for us (`surface_is_srgb` true) takes the light level of that code.
-pub fn surface_value(linear: f64, surface_is_srgb: bool) -> f32 {
-    let encoded = f64::from(to_code(linear)) / 255.0;
+pub fn code_value(code: u8, surface_is_srgb: bool) -> f32 {
+    let encoded = f64::from(code) / 255.0;
     (if surface_is_srgb {
         srgb_decode(encoded)
     } else {
         encoded
     }) as f32
+}
+
+/// The color the eye should see when `a` is shown for a share `share_a` of the frames
+/// (0.0 to 1.0) and `b` for the rest, as the nearest 8-bit codes.
+///
+/// The eye adds up light, so the mix is made in light, not in codes. With codes one step
+/// apart the true result falls between two codes, and the nearest code is all an 8-bit
+/// screen can show without flipping.
+pub fn mix(a: [u8; 3], b: [u8; 3], share_a: f64) -> [u8; 3] {
+    let share_a = share_a.clamp(0.0, 1.0);
+    let light = |code: u8| srgb_decode(f64::from(code) / 255.0);
+    let channel = |i: usize| to_code(light(a[i]) * share_a + light(b[i]) * (1.0 - share_a));
+    [channel(0), channel(1), channel(2)]
 }
 
 /// Three 8-bit codes packed into one BGRA pixel (blue lowest, alpha fully opaque).
@@ -72,51 +62,6 @@ pub fn pack_bgra(code: [u8; 3]) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const A: Rgb64 = [0.40, 0.70, 0.30];
-    const B: Rgb64 = [0.30, 0.55, 0.80];
-
-    #[test]
-    fn to_f32_keeps_exact_values_and_rounds_the_rest() {
-        assert_eq!(to_f32([0.0, 0.5, 1.0]), [0.0, 0.5, 1.0]);
-        assert_eq!(to_f32([0.4, 0.7, 0.3]), [0.4f32, 0.7f32, 0.3f32]);
-    }
-
-    #[test]
-    fn select_picks_a_or_b() {
-        assert_eq!(select(true, A, B), to_f32(A));
-        assert_eq!(select(false, A, B), to_f32(B));
-    }
-
-    #[test]
-    fn average_of_black_and_white_is_grey() {
-        assert_eq!(average([0.0; 3], [1.0; 3]), [0.5, 0.5, 0.5]);
-    }
-
-    #[test]
-    fn average_of_two_equal_colors_is_that_color() {
-        assert_eq!(average(A, A), to_f32(A));
-    }
-
-    #[test]
-    fn average_does_not_depend_on_the_order() {
-        assert_eq!(average(A, B), average(B, A));
-    }
-
-    #[test]
-    fn average_lies_between_the_two_colors_in_every_channel() {
-        let steps = [0.0, 0.1, 0.25, 0.4, 0.5, 0.75, 0.9, 1.0];
-        for &r1 in &steps {
-            for &r2 in &steps {
-                let (a, b) = ([r1, 0.2, 0.9], [r2, 0.8, 0.1]);
-                let m = average(a, b);
-                for ch in 0..3 {
-                    let (lo, hi) = (a[ch].min(b[ch]) as f32, a[ch].max(b[ch]) as f32);
-                    assert!(lo <= m[ch] && m[ch] <= hi, "channel {ch}: {a:?} {b:?}");
-                }
-            }
-        }
-    }
 
     #[test]
     fn srgb_encode_matches_known_points() {
@@ -185,17 +130,59 @@ mod tests {
     }
 
     #[test]
-    fn surface_value_puts_exactly_the_wanted_code_on_either_kind_of_surface() {
+    fn code_value_puts_exactly_the_wanted_code_on_either_kind_of_surface() {
         for k in 0..=255u8 {
-            let light = srgb_decode(f64::from(k) / 255.0);
-
             // a surface that stores codes: the card rounds value * 255
-            let plain = f64::from(surface_value(light, false));
+            let plain = f64::from(code_value(k, false));
             assert_eq!((plain * 255.0).round() as u8, k, "plain, code {k}");
 
             // a surface that encodes for us: the card encodes, then rounds
-            let encoded = srgb_encode(f64::from(surface_value(light, true)));
+            let encoded = srgb_encode(f64::from(code_value(k, true)));
             assert_eq!((encoded * 255.0).round() as u8, k, "sRGB, code {k}");
+        }
+    }
+
+    #[test]
+    fn mix_at_the_ends_gives_back_a_or_b() {
+        let (a, b) = ([10, 120, 250], [200, 5, 0]);
+        assert_eq!(mix(a, b, 1.0), a);
+        assert_eq!(mix(a, b, 0.0), b);
+        assert_eq!(mix(a, b, 7.0), a, "share above 1 counts as 1");
+        assert_eq!(mix(a, b, -3.0), b, "share below 0 counts as 0");
+    }
+
+    #[test]
+    fn mix_of_two_equal_colors_is_that_color_for_any_share() {
+        for k in 0..=255u8 {
+            for share in [0.0, 0.25, 0.5, 2.0 / 3.0, 0.75, 1.0] {
+                assert_eq!(mix([k, k, k], [k, k, k], share), [k, k, k], "{k} {share}");
+            }
+        }
+    }
+
+    #[test]
+    fn mix_is_made_in_light_not_in_codes() {
+        // Half black and half white light is code 188, not the middle code 127 or 128.
+        assert_eq!(mix([0; 3], [255; 3], 0.5), [188; 3]);
+    }
+
+    #[test]
+    fn mix_does_not_depend_on_the_order_at_half() {
+        let (a, b) = ([10, 120, 250], [200, 5, 0]);
+        assert_eq!(mix(a, b, 0.5), mix(b, a, 0.5));
+    }
+
+    #[test]
+    fn mix_lies_between_the_two_colors_and_follows_the_share() {
+        for (lo, hi) in [(0u8, 1u8), (127, 128), (0, 255), (30, 31), (200, 255)] {
+            let mut last = lo;
+            for step in 0..=20 {
+                let share_hi = f64::from(step) / 20.0;
+                let m = mix([lo; 3], [hi; 3], 1.0 - share_hi)[0];
+                assert!(lo <= m && m <= hi, "{lo} {hi} {share_hi}");
+                assert!(m >= last, "never goes back: {lo} {hi} {share_hi}");
+                last = m;
+            }
         }
     }
 

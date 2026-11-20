@@ -4,7 +4,7 @@ Found by reading the code in the first review (November 2026). Nothing here was 
 
 ## About the idea
 
-1. **The demo flips two distant colors.** The defaults differ by many 8-bit steps, so you see flicker, not a third color. FRC is useful between neighbouring codes (127 and 128), where the difference is almost invisible. The demo should default to neighbouring codes.
+1. **The demo flipped two distant colors. Fixed in step 4b.** The defaults differed by many 8-bit steps, so you saw flicker, not a third color. Colors are now 8-bit codes and start one step apart (127 and 128). With such a small gap the effect is subtle by nature: a gradient test pattern would show it better (see the roadmap).
 2. **Every pixel flips together.** In the full-window view all pixels change at once, the most visible kind of flicker. Real FRC gives neighbouring pixels different phases (spatiotemporal dithering, ideally blue noise).
 3. **The flip patterns are few and clumpy.** `duty_a` gives three ratios, as runs (`AAB`). More levels need longer patterns spread as evenly as possible (`ABABA`, not `AAABB`). With N frames the pattern gives N−1 extra levels per 8-bit step: N=4 is about 2 more bits.
 

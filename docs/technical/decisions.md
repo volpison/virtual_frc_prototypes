@@ -121,3 +121,9 @@ Left out: a dither shader (roadmap step 6), and a 10-bit surface. The codes the 
 Decided: step 4a does not change what a color in the program means (linear light, 0.0 to 1.0, edited in steps of 0.02). Editing in 8-bit codes with neighbouring defaults is step 4b, its own pull request.
 Why: 4a then changes the pipeline without changing what the demo looks like, apart from the banding fix, and 4b is the visible redesign that needs a real monitor and a person to judge.
 Left out: converting the state to codes in the same pull request.
+
+## Colors are 8-bit codes, and the plain side is the nearest code (2026-11)
+
+Decided: the two colors are stored and edited as 8-bit codes (0 to 255 per channel), start one code apart (127 and 128), and move by 1 per key press, or 10 with Shift. The plain half of the side-by-side view shows `frc::color::mix` of the two codes: the mix is made in light, weighted by how often A is shown, and rounded to the nearest code.
+Why: frame rate control is about neighbouring codes, so the demo should speak in codes. The eye adds light, so the mix is made in light, not in codes (half black and half white light is code 188, not 127). Weighting by the pattern fixes a mismatch: with 2:1 or 3:1 the flipping side averages to 2/3 or 3/4 of A, but the plain side always showed the 1:1 average.
+Left out: showing the exact in-between color on the plain side (an 8-bit screen cannot; a 10-bit surface could, later), a Shift-free way to cross the whole range (key repeat is still ignored), and a gradient test pattern, which would show the effect better than two flat halves.

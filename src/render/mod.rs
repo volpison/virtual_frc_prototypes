@@ -8,7 +8,7 @@ use log::info;
 use winit::window::Window;
 
 use crate::frc::color;
-use crate::software::{fill_checkerboard, fill_side_by_side, fill_solid, pack_bgra};
+use crate::software::{fill_checkerboard, fill_side_by_side, fill_solid};
 use crate::state::{AppState, DisplayMode};
 use present::choose_present_mode;
 use shaders::{GPU_SHADER, SOFT_SHADER};
@@ -433,13 +433,13 @@ impl<'a> GpuState<'a> {
     pub(crate) fn render_gpu(&mut self, state: &AppState) -> Result<(), wgpu::SurfaceError> {
         let temporal = state.temporal_color();
         let static_avg = state.static_average();
-        let ca = state.color_a_f32();
-        let cb = state.color_b_f32();
+        let ca = state.color_a;
+        let cb = state.color_b;
 
-        // The program picks the exact 8-bit codes; the card only has to put them on screen.
+        // The colors are already 8-bit codes; the card only has to put them on screen.
         let srgb = self.surface_is_srgb;
-        let on_surface = |c: [f32; 3]| {
-            let v = |x: f32| color::surface_value(f64::from(x), srgb);
+        let on_surface = |c: [u8; 3]| {
+            let v = |x: u8| color::code_value(x, srgb);
             [v(c[0]), v(c[1]), v(c[2]), 1.0]
         };
 
@@ -489,10 +489,10 @@ impl<'a> GpuState<'a> {
     pub(crate) fn render_software(&mut self, state: &AppState) -> Result<(), wgpu::SurfaceError> {
         let w = self.size.width;
         let h = self.size.height;
-        let temporal = pack_bgra(state.temporal_color());
-        let static_avg = pack_bgra(state.static_average());
-        let ca = pack_bgra(state.color_a_f32());
-        let cb = pack_bgra(state.color_b_f32());
+        let temporal = color::pack_bgra(state.temporal_color());
+        let static_avg = color::pack_bgra(state.static_average());
+        let ca = color::pack_bgra(state.color_a);
+        let cb = color::pack_bgra(state.color_b);
 
         match state.mode {
             DisplayMode::SideBySide => {

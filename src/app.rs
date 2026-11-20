@@ -13,7 +13,7 @@ use winit::{
 };
 
 use crate::render::GpuState;
-use crate::state::{AppState, Backend, DEFAULT_COLOR_A, DEFAULT_COLOR_B, STEP};
+use crate::state::{AppState, Backend, COARSE_STEP, DEFAULT_COLOR_A, DEFAULT_COLOR_B, STEP};
 
 pub(crate) fn run() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
@@ -49,6 +49,8 @@ pub(crate) fn run() {
     let mut title_timer = Instant::now();
     let mut last_frame = Instant::now();
     let frame_period = Duration::from_secs_f64(1.0 / state.monitor_hz.max(1.0));
+    // Whether Shift is held: colors then move in bigger steps.
+    let mut shift = false;
 
     event_loop
         .run(move |event, elwt| {
@@ -59,6 +61,7 @@ pub(crate) fn run() {
                     match event {
                         WindowEvent::CloseRequested => elwt.exit(),
                         WindowEvent::Resized(s) => gpu.resize(s),
+                        WindowEvent::ModifiersChanged(m) => shift = m.state().shift_key(),
                         WindowEvent::KeyboardInput {
                             event:
                                 KeyEvent {
@@ -69,13 +72,14 @@ pub(crate) fn run() {
                                 },
                             ..
                         } if key_state == ElementState::Pressed => {
+                            let step = if shift { COARSE_STEP } else { STEP };
                             match &logical_key {
                                 Key::Named(NamedKey::Escape) => elwt.exit(),
                                 Key::Named(NamedKey::Space) => state.editing_a = !state.editing_a,
-                                Key::Named(NamedKey::ArrowUp) => state.adjust_channel(1, STEP),
-                                Key::Named(NamedKey::ArrowDown) => state.adjust_channel(1, -STEP),
-                                Key::Named(NamedKey::ArrowLeft) => state.adjust_channel(0, -STEP),
-                                Key::Named(NamedKey::ArrowRight) => state.adjust_channel(0, STEP),
+                                Key::Named(NamedKey::ArrowUp) => state.adjust_channel(1, step),
+                                Key::Named(NamedKey::ArrowDown) => state.adjust_channel(1, -step),
+                                Key::Named(NamedKey::ArrowLeft) => state.adjust_channel(0, -step),
+                                Key::Named(NamedKey::ArrowRight) => state.adjust_channel(0, step),
                                 Key::Character(c) => match c.as_str() {
                                     "q" | "Q" => elwt.exit(),
                                     "m" | "M" => {
@@ -99,31 +103,31 @@ pub(crate) fn run() {
                                         state.color_a = DEFAULT_COLOR_A;
                                         state.color_b = DEFAULT_COLOR_B;
                                     }
-                                    "w" | "W" => state.adjust_channel(1, STEP),
-                                    "s" | "S" => state.adjust_channel(1, -STEP),
-                                    "a" | "A" => state.adjust_channel(0, -STEP),
-                                    "d" | "D" => state.adjust_channel(0, STEP),
-                                    "e" | "E" => state.adjust_channel(2, STEP),
-                                    "c" | "C" => state.adjust_channel(2, -STEP),
+                                    "w" | "W" => state.adjust_channel(1, step),
+                                    "s" | "S" => state.adjust_channel(1, -step),
+                                    "a" | "A" => state.adjust_channel(0, -step),
+                                    "d" | "D" => state.adjust_channel(0, step),
+                                    "e" | "E" => state.adjust_channel(2, step),
+                                    "c" | "C" => state.adjust_channel(2, -step),
                                     "i" | "I" => {
                                         state.editing_a = false;
-                                        state.adjust_channel(1, STEP);
+                                        state.adjust_channel(1, step);
                                     }
                                     "k" | "K" => {
                                         state.editing_a = false;
-                                        state.adjust_channel(1, -STEP);
+                                        state.adjust_channel(1, -step);
                                     }
                                     "j" | "J" => {
                                         state.editing_a = false;
-                                        state.adjust_channel(0, -STEP);
+                                        state.adjust_channel(0, -step);
                                     }
                                     "l" | "L" => {
                                         state.editing_a = false;
-                                        state.adjust_channel(0, STEP);
+                                        state.adjust_channel(0, step);
                                     }
                                     "u" | "U" => {
                                         state.editing_a = false;
-                                        state.adjust_channel(2, STEP);
+                                        state.adjust_channel(2, step);
                                     }
                                     _ => {}
                                 },
