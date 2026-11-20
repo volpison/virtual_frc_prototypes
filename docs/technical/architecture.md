@@ -4,18 +4,21 @@ How the code is organised, for a developer who is new to it. It follows [the con
 
 ## Today
 
-The whole program is one file, `src/main.rs` (about 1,100 lines), plus `Cargo.toml`. In order, it holds:
+The program is split by responsibility (the split was a pure move: no behaviour changed).
 
-| Section | What it does |
+| File | What it does |
 |---|---|
-| `DisplayMode`, `Backend` | The three views and the two drawing methods |
-| `Metrics`, `AppState` | Frame counter, colors, flip pattern and the title text |
-| `pack_bgra`, `fill_*` | The software path: fill a CPU buffer with rayon |
-| `Uniforms`, `GpuState` | The wgpu setup, both render pipelines, resize and the two render functions |
-| `GPU_SHADER`, `SOFT_SHADER` | The WGSL shaders |
-| `choose_present_mode`, `main` | Present-mode choice, the window, the key handling and the frame loop |
+| `src/main.rs` | The crate's documentation (the keys), the module list and the entry point |
+| `src/app.rs` | The window, the key handling and the frame loop |
+| `src/state.rs` | What the program is doing: colors, flip pattern, view, drawing method, frame counts and the title text |
+| `src/software.rs` | The software path: filling a CPU buffer (no window, no GPU) |
+| `src/render/mod.rs` | The wgpu state: surface, both pipelines, resize and the two render paths |
+| `src/render/shaders.rs` | The two WGSL shaders |
+| `src/render/present.rs` | Choosing the present mode (vsync or not) |
 
-Pure rules (the flip pattern, the average, the packing of colors) are mixed in with window and GPU code, and a new view touches four places in the same file. That is the first thing to fix, as its own change (see the roadmap).
+Dependencies point one way: `app` calls `state` and `render`; `render` uses `state` and `software`; `state` and `software` use neither the window nor the GPU.
+
+The pure rules (the flip pattern, the average of two colors) still sit in `state.rs` next to the title text. Pulling them into their own tested core is the next step on the roadmap.
 
 ## Where it is going
 
@@ -28,16 +31,8 @@ Pure rules (the flip pattern, the average, the packing of colors) are mixed in w
   platform               frame timing, fullscreen, refresh-rate and variable-refresh checks
 ```
 
-Planned folders (none exist yet):
-
-| Folder | Holds |
-|---|---|
-| `src/core/` | Pure maths with unit tests; later it can become its own crate |
-| `src/render/` | wgpu state, pipelines and shaders |
-| `src/platform/` | Operating-system specific timing and display queries |
-| `src/app.rs` | Window, key handling and the frame loop |
-| `tests/` | Mirrors `src/core/` |
+Still to come: `src/core/` for the pure maths (patterns, dither thresholds, color conversion) with unit tests in `tests/`, and `src/platform/` for operating-system specific timing and display queries. Later the core can become its own crate.
 
 ## How to add a feature
 
-Today, a new view needs a new `DisplayMode` entry, a branch in the GPU shader, a branch in `render_software`, a key in the handler and a name in the title. Five places for one idea means the structure is wrong; split the file first (see [the decision log](decisions.md)).
+A new view today needs: an entry in `DisplayMode` (`state.rs`), a branch in the GPU shader (`render/shaders.rs`), a branch in `render_software` (`render/mod.rs`) with its fill in `software.rs`, and a key in `app.rs`. Each is one place in one responsibility, but four files for one idea is still a sign that the pattern logic should move into the core; record such changes in [the decision log](decisions.md).

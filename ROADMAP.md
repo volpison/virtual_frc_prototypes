@@ -17,14 +17,15 @@ A prototype that explores software temporal dithering on high-refresh monitors: 
 
 ## Now
 
-Setting the project up to the house rules: formatting, docs, CI, licence and the list of [known issues](docs/technical/known-issues.md) found in the first review.
+Step 3: pulling the pattern and dither maths into a core with unit tests, the first code that CI can really test. The list of [known issues](docs/technical/known-issues.md) is the backlog behind the steps below.
 
 ## Next
 
 Each step is its own pull request. A step that only moves code changes no behaviour.
 
+0. ✅ Set the project up to the house rules.
 1. ✅ Format `src/main.rs` with rustfmt (pure formatting).
-2. Split `src/main.rs` into modules by responsibility (pure move, no behaviour change).
+2. ✅ Split `src/main.rs` into modules by responsibility (pure move, no behaviour change).
 3. Pull the pattern and dither maths into a core that knows nothing about windows or the GPU, with unit tests.
 4. Fix the color pipeline: own the rounding to 8 bits, and make the demo flip neighbouring codes instead of two distant colors.
 5. Pace the program by the monitor: advance the pattern once per frame actually shown, stop the busy loop, log frame-time spread and missed frames.

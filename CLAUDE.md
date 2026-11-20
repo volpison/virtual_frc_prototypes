@@ -19,7 +19,7 @@ When the project has its own architecture, commands and conventions, add them be
 A Rust prototype of software temporal dithering on high-refresh monitors (wgpu + winit). See [the roadmap](ROADMAP.md) for scope, above all **What it is not**, and [the known issues](docs/technical/known-issues.md) for the backlog.
 
 - **Commands:** `cargo fmt --check`, `cargo clippy --all-targets`, `cargo test`, `cargo build --release`, then `node --test "scripts/*.test.mjs"` and `node scripts/check-docs.mjs`.
-- **Layout:** today everything is in `src/main.rs`; the planned layers are in [Architecture](docs/technical/architecture.md). Keep new pure maths (patterns, dither thresholds, color conversion) free of wgpu and winit so it can be tested.
+- **Layout:** `src/app.rs` (window, keys, loop), `src/state.rs`, `src/software.rs` and `src/render/`; the layers and what is still planned are in [Architecture](docs/technical/architecture.md). Keep new pure maths (patterns, dither thresholds, color conversion) free of wgpu and winit so it can be tested.
 - **Verification is limited.** Cloud sessions usually cannot download crates, open a window or reach a GPU. Say plainly when a change was not compiled. Never claim the visual effect works: it needs a real high-refresh monitor and a person.
 - **Do not mix** a pure move with a behaviour change. Formatting is its own pull request.
 - **Docs to touch:** a change in keys or what the user sees updates the README keys table and `docs/user-guide/`; add a line to `CHANGELOG.md`.
