@@ -7,6 +7,7 @@ use bytemuck::{Pod, Zeroable};
 use log::info;
 use winit::window::Window;
 
+use crate::frc::color;
 use crate::software::{fill_checkerboard, fill_side_by_side, fill_solid, pack_bgra};
 use crate::state::{AppState, DisplayMode};
 use present::choose_present_mode;
@@ -38,6 +39,10 @@ pub(crate) struct GpuState<'a> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
+    // Whether the surface encodes colors for us (sRGB) or stores the codes we write.
+    surface_is_srgb: bool,
+    // Format of the software texture: it must hold the same codes the surface stores.
+    soft_format: wgpu::TextureFormat,
     pub(crate) size: winit::dpi::PhysicalSize<u32>,
     available_present_modes: Vec<wgpu::PresentMode>,
 
@@ -95,12 +100,24 @@ impl<'a> GpuState<'a> {
             .expect("device");
 
         let surface_caps = surface.get_capabilities(&adapter);
+        // Prefer a surface that stores plain codes: then the program decides the exact
+        // 8-bit codes (see frc::color) and the graphics card does not round them again.
         let surface_format = surface_caps
             .formats
             .iter()
             .copied()
-            .find(|f| f.is_srgb())
+            .find(|f| !f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
+        let surface_is_srgb = surface_format.is_srgb();
+        let soft_format = if surface_is_srgb {
+            wgpu::TextureFormat::Bgra8UnormSrgb
+        } else {
+            wgpu::TextureFormat::Bgra8Unorm
+        };
+        info!(
+            "Surface format: {:?} (encodes sRGB itself: {})",
+            surface_format, surface_is_srgb
+        );
         let present_mode = choose_present_mode(&surface_caps.present_modes, prefer_vsync);
         info!("Present mode: {:?}", present_mode);
 
@@ -221,7 +238,7 @@ impl<'a> GpuState<'a> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: soft_format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
@@ -318,6 +335,8 @@ impl<'a> GpuState<'a> {
             device,
             queue,
             config,
+            surface_is_srgb,
+            soft_format,
             size,
             available_present_modes: surface_caps.present_modes,
             gpu_pipeline,
@@ -362,7 +381,7 @@ impl<'a> GpuState<'a> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8Unorm,
+            format: self.soft_format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
@@ -417,15 +436,22 @@ impl<'a> GpuState<'a> {
         let ca = state.color_a_f32();
         let cb = state.color_b_f32();
 
+        // The program picks the exact 8-bit codes; the card only has to put them on screen.
+        let srgb = self.surface_is_srgb;
+        let on_surface = |c: [f32; 3]| {
+            let v = |x: f32| color::surface_value(f64::from(x), srgb);
+            [v(c[0]), v(c[1]), v(c[2]), 1.0]
+        };
+
         let uniforms = Uniforms {
             mode: state.mode as u32,
             phase: state.frame_phase,
             cell_size: state.cell_size,
             _pad: 0,
-            color_a: [ca[0], ca[1], ca[2], 1.0],
-            color_b: [cb[0], cb[1], cb[2], 1.0],
-            temporal: [temporal[0], temporal[1], temporal[2], 1.0],
-            static_avg: [static_avg[0], static_avg[1], static_avg[2], 1.0],
+            color_a: on_surface(ca),
+            color_b: on_surface(cb),
+            temporal: on_surface(temporal),
+            static_avg: on_surface(static_avg),
             resolution: [self.size.width as f32, self.size.height as f32],
             _pad2: [0.0, 0.0],
         };

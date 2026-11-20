@@ -16,9 +16,9 @@ node scripts/check-docs.mjs          # links, heading links and the docs index
 The pure rules in `src/frc/` are tested, with the tests in the same files under `#[cfg(test)]` (the program is a binary crate, so a separate `tests/` folder cannot reach them yet; it will once `frc` is a library crate):
 
 - `pattern.rs`: A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
-- `color.rs`: choosing A or B; the average of two colors is symmetric, lies between them, and black with white gives grey.
+- `color.rs`: choosing A or B; the average of two colors is symmetric, lies between them, and black with white gives grey; sRGB encoding and decoding agree with known values and undo each other; every one of the 256 codes survives the trip through light and back; rounding never goes down as light goes up; dark colors get their own codes; the value handed to the card puts exactly the wanted code on screen for both kinds of surface; a pixel is packed in the right byte order.
 
-Still without tests, because they are tied to the window or the GPU: `state.rs`, `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle, and rounding to 8 bits gives exactly the intended neighbouring codes.
+Still without tests, because they are tied to the window or the GPU: `state.rs`, `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle.
 
 Since `frc` uses no other crate, its tests also run with plain `rustc --test` and no download.
 

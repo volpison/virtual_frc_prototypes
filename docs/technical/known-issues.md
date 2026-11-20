@@ -10,7 +10,7 @@ Found by reading the code in the first review (November 2026). Nothing here was 
 
 ## Color and precision
 
-4. **The color space is unclear.** The GPU path prefers an sRGB surface, so its values are linear light (right for averaging). If none exists it falls back to the first format, and the average is then wrong. The software path stores those same values in a `Bgra8Unorm` texture, so it rounds in linear space: linear code 1 shows as sRGB 12.7, code 2 as 21.7, code 3 as 28.2. Dark colors band badly. The fix is to own the rounding: use a non-sRGB surface and encode and dither in the shader.
+4. **The color space was unclear. Fixed in step 4a.** The software path used to round light to 8 bits before the card encoded it, so linear code 1 showed as sRGB 12.7, code 2 as 21.7 and code 3 as 28.2, and dark colors banded. Now `frc::color::to_code` is the only place that rounds, a surface that stores plain codes is preferred, and the software texture matches the surface (see [the decision log](decisions.md)). Still open: colors in the program are linear-light values, not 8-bit codes, until step 4b.
 
 ## Timing
 

@@ -2,15 +2,17 @@
 
 use rayon::prelude::*;
 
-/// Pack an sRGB float color into a BGRA u32 (little-endian, matching common
-/// Windows / wgpu texture layouts).
+use crate::frc::color;
+
+/// Pack a linear-light float color into a BGRA u32 that holds its 8-bit codes
+/// (little-endian, matching common Windows / wgpu texture layouts).
+///
+/// The rounding to 8 bits happens here, in `frc::color::to_code`, so the software path
+/// shows exactly the codes the GPU path shows.
 #[inline(always)]
 pub(crate) fn pack_bgra(c: [f32; 3]) -> u32 {
-    let r = (c[0].clamp(0.0, 1.0) * 255.0 + 0.5) as u32;
-    let g = (c[1].clamp(0.0, 1.0) * 255.0 + 0.5) as u32;
-    let b = (c[2].clamp(0.0, 1.0) * 255.0 + 0.5) as u32;
-    // BGRA in memory: B | G << 8 | R << 16 | A << 24
-    b | (g << 8) | (r << 16) | (0xFF << 24)
+    let code = |v: f32| color::to_code(f64::from(v));
+    color::pack_bgra([code(c[0]), code(c[1]), code(c[2])])
 }
 
 /// Fill a whole buffer with a solid color using multi-threaded stores.
