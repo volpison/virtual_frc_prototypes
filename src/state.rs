@@ -1,7 +1,6 @@
 //! What the program is doing right now: colors, flip pattern, view, drawing method and frame counts.
 
-use std::time::{Duration, Instant};
-
+use crate::frc::timing::FrameTimer;
 use crate::frc::{color, pattern};
 
 /// The two colors flipped between, as 8-bit codes. They start one step apart, which is
@@ -57,41 +56,13 @@ impl Backend {
     }
 }
 
-pub(crate) struct Metrics {
-    frame_count: u64,
-    last_report: Instant,
-    current_fps: f64,
-    total_frames: u64,
-}
-
-impl Metrics {
-    pub(crate) fn new() -> Self {
-        Self {
-            frame_count: 0,
-            last_report: Instant::now(),
-            current_fps: 0.0,
-            total_frames: 0,
-        }
-    }
-    pub(crate) fn record_frame(&mut self) {
-        self.frame_count += 1;
-        self.total_frames += 1;
-        let elapsed = self.last_report.elapsed();
-        if elapsed >= Duration::from_millis(400) {
-            self.current_fps = self.frame_count as f64 / elapsed.as_secs_f64();
-            self.frame_count = 0;
-            self.last_report = Instant::now();
-        }
-    }
-}
-
 pub(crate) struct AppState {
     pub(crate) color_a: [u8; 3],
     pub(crate) color_b: [u8; 3],
     pub(crate) editing_a: bool,
     pub(crate) duty_a: u32,
     pub(crate) frame_phase: u32,
-    pub(crate) metrics: Metrics,
+    pub(crate) metrics: FrameTimer,
     pub(crate) monitor_hz: f64,
     pub(crate) use_vsync: bool,
     pub(crate) mode: DisplayMode,
@@ -107,7 +78,7 @@ impl AppState {
             editing_a: true,
             duty_a: 1,
             frame_phase: 0,
-            metrics: Metrics::new(),
+            metrics: FrameTimer::new(monitor_hz),
             monitor_hz,
             use_vsync: true,
             mode: DisplayMode::SideBySide,
@@ -132,7 +103,7 @@ impl AppState {
     }
 
     pub(crate) fn advance_phase(&mut self) {
-        self.frame_phase = self.frame_phase.wrapping_add(1);
+        self.frame_phase = pattern::next_phase(self.frame_phase);
     }
 
     /// Move one channel of the selected color by `delta` codes, staying within 0 to 255.
@@ -149,8 +120,8 @@ impl AppState {
         let which = if self.editing_a { "A" } else { "B" };
         let present = if self.use_vsync { "Fifo" } else { "Imm" };
         format!(
-            "VirtualFRC  |  {:.0} FPS  |  {}  |  {}  |  {}  |  edit {}  |  A {},{},{}  B {},{},{}  |  duty {}:1  |  cell {}  |  frames:{}",
-            self.metrics.current_fps,
+            "VirtualFRC  |  {:.0} FPS  |  {}  |  {}  |  {}  |  edit {}  |  A {},{},{}  B {},{},{}  |  duty {}:1  |  cell {}  |  frames:{}  missed:{}",
+            self.metrics.fps(),
             self.backend.name(),
             present,
             self.mode.name(),
@@ -163,7 +134,8 @@ impl AppState {
             self.color_b[2],
             self.duty_a,
             self.cell_size,
-            self.metrics.total_frames,
+            self.metrics.total_frames(),
+            self.metrics.total_missed(),
         )
     }
 }
@@ -242,6 +214,32 @@ mod tests {
     fn the_plain_side_is_one_of_the_two_codes_when_they_are_a_step_apart() {
         let m = state().static_average()[0];
         assert!(m == 127 || m == 128, "{m}");
+    }
+
+    #[test]
+    fn the_frame_counter_starts_over_without_a_jump_in_the_pattern() {
+        for duty in 1..=3 {
+            let mut s = state();
+            s.duty_a = duty;
+            s.frame_phase = pattern::PHASE_PERIOD - 2;
+            let mut shown = Vec::new();
+            for _ in 0..8 {
+                shown.push(s.temporal_color() == DEFAULT_COLOR_A);
+                s.advance_phase();
+            }
+            // the same 8 frames, counted without the counter ever starting over
+            let expected: Vec<bool> = (0..8)
+                .map(|i| pattern::shows_a(pattern::PHASE_PERIOD - 2 + i, duty))
+                .collect();
+            assert_eq!(shown, expected, "duty {duty}");
+            assert!(s.frame_phase < 8, "the counter did start over");
+        }
+    }
+
+    #[test]
+    fn the_title_counts_shown_and_missed_frames() {
+        let title = state().title_string();
+        assert!(title.contains("frames:0  missed:0"), "{title}");
     }
 
     #[test]

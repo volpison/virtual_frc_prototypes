@@ -127,3 +127,21 @@ Left out: converting the state to codes in the same pull request.
 Decided: the two colors are stored and edited as 8-bit codes (0 to 255 per channel), start one code apart (127 and 128), and move by 1 per key press, or 10 with Shift. The plain half of the side-by-side view shows `frc::color::mix` of the two codes: the mix is made in light, weighted by how often A is shown, and rounded to the nearest code.
 Why: frame rate control is about neighbouring codes, so the demo should speak in codes. The eye adds light, so the mix is made in light, not in codes (half black and half white light is code 188, not 127). Weighting by the pattern fixes a mismatch: with 2:1 or 3:1 the flipping side averages to 2/3 or 3/4 of A, but the plain side always showed the 1:1 average.
 Left out: showing the exact in-between color on the plain side (an 8-bit screen cannot; a 10-bit surface could, later), a Shift-free way to cross the whole range (key repeat is still ignored), and a gradient test pattern, which would show the effect better than two flat halves.
+
+## Frames are driven by the display, not by a timer (2026-11)
+
+Decided: the frame loop is a chain of redraw requests. Each `RedrawRequested` draws one frame, and when it was shown the pattern moves one step, the frame is timed, and the next redraw is requested. The control flow is `Wait`. There is no software timer, no polling and no per-frame check of elapsed time. With vsync (`Fifo`) showing a frame waits for the monitor, so the program is paced by the display itself.
+Why: the pattern only works if it moves exactly one step per refresh. A timer made from the reported refresh rate (143.98, not 144) drifts against the real one and gives beats; polling kept a core at 100%. Advancing only on a frame that was shown keeps the pattern in step when a frame is lost.
+Left out: a frame cap for vsync off. That mode now draws as fast as it can, which is what it really does; it stays as an experiment. When the surface cannot give a frame (a hidden window) the loop sleeps 8 ms instead of spinning.
+
+## Frame timing is measured in pure code and reported only when something is wrong (2026-11)
+
+Decided: `frc::timing` takes the time of each shown frame from the caller and reports once a second: frames, frame rate, mean, p99 and max time between frames, and missed refreshes. A refresh counts as missed from 1.5 periods between frames on; a gap over half a second is a pause, not a loss. The terminal gets a warning only when vsync is on and the report shows a problem (lost refreshes, a slow tail, or an average more than 5% off the refresh rate); otherwise it is a debug line (`RUST_LOG=debug`). The title bar shows the frame and missed counts.
+Why: the missed refresh is the failure that breaks the effect, so it must be visible and countable, and a mean frame rate hides it. Keeping the clock outside makes the rules testable.
+Left out: a log file and an export of timing data (listed under later), and measuring when the monitor really shows a frame (needs platform presentation statistics, which wgpu does not give).
+
+## The frame counter starts over at 720,720 (2026-11)
+
+Decided: the counter that selects the pattern's frame starts over at 720,720, a multiple of every cycle length from 2 to 16.
+Why: wrapping at 2^32 made a cycle that does not divide it (3 or 5 frames) jump once after about 190 days.
+Left out: longer cycles than 16 frames; revisit with the dither step.

@@ -12,7 +12,7 @@ Many monitors reach more colors than their 8-bit input by flipping a pixel betwe
 - Switch between three views: side-by-side, full-window flip and a checkerboard.
 - Compare two ways of drawing: on the graphics card (GPU) or filled by the processor and uploaded (Software).
 - Set the two colors as 8-bit codes (0 to 255), starting one step apart, and change the flip pattern (1:1, 2:1, 3:1) and vsync from the keyboard.
-- Read the measured frame rate and the monitor's refresh rate in the title bar.
+- Read the measured frame rate and the number of missed refreshes in the title bar. A missed refresh breaks the effect, so this number should stay at 0.
 
 ## Run it
 
@@ -35,7 +35,7 @@ The same command works on Windows, Linux and macOS.
 | M | Next view (side-by-side, full flip, checkerboard) |
 | B | Switch drawing method (GPU or Software) |
 | 1 / 2 / 3 | Flip pattern 1:1, 2:1 or 3:1 |
-| V | Vsync on or off |
+| V | Vsync on or off (off draws as fast as possible, which loses the effect) |
 | [ / ] | Smaller / larger checkerboard squares |
 | R | Reset both colors |
 | Esc or Q | Quit |

@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use winit::{
     dpi::LogicalSize,
     event::{ElementState, Event, KeyEvent, WindowEvent},
@@ -47,14 +47,17 @@ pub(crate) fn run() {
     let mut gpu = pollster::block_on(GpuState::new(&window_for_gpu, state.use_vsync));
 
     let mut title_timer = Instant::now();
-    let mut last_frame = Instant::now();
-    let frame_period = Duration::from_secs_f64(1.0 / state.monitor_hz.max(1.0));
     // Whether Shift is held: colors then move in bigger steps.
     let mut shift = false;
 
+    // Frames are drawn one after the other: each ends by asking for the next one, and showing
+    // a frame waits for the monitor (vsync). There is no timer and no polling, so the program
+    // sleeps between refreshes and the pattern moves exactly one step per frame shown.
+    window.request_redraw();
+
     event_loop
         .run(move |event, elwt| {
-            elwt.set_control_flow(ControlFlow::Poll);
+            elwt.set_control_flow(ControlFlow::Wait);
 
             match event {
                 Event::WindowEvent { event, window_id } if window_id == window.id() => {
@@ -62,6 +65,61 @@ pub(crate) fn run() {
                         WindowEvent::CloseRequested => elwt.exit(),
                         WindowEvent::Resized(s) => gpu.resize(s),
                         WindowEvent::ModifiersChanged(m) => shift = m.state().shift_key(),
+                        WindowEvent::Moved(_) => {
+                            // The window may now be on a monitor with another refresh rate.
+                            let hz = window
+                                .current_monitor()
+                                .and_then(|m| m.refresh_rate_millihertz())
+                                .map(|mhz| mhz as f64 / 1000.0);
+                            if let Some(hz) = hz {
+                                if (hz - state.monitor_hz).abs() > 0.5 {
+                                    info!(
+                                        "Monitor refresh rate: {:.1} Hz (was {:.1})",
+                                        hz, state.monitor_hz
+                                    );
+                                    state.monitor_hz = hz;
+                                    state.metrics.set_refresh_hz(hz);
+                                }
+                            }
+                        }
+                        WindowEvent::RedrawRequested => {
+                            let result = match state.backend {
+                                Backend::Gpu => gpu.render_gpu(&state),
+                                Backend::Software => gpu.render_software(&state),
+                            };
+                            match result {
+                                Ok(()) => {
+                                    // Only a frame that was shown moves the pattern on.
+                                    state.advance_phase();
+                                    if let Some(report) = state.metrics.record(Instant::now()) {
+                                        // Without vsync the rate is not meant to match the monitor.
+                                        if state.use_vsync && report.has_problem() {
+                                            warn!("Frame timing: {report}");
+                                        } else {
+                                            debug!("Frame timing: {report}");
+                                        }
+                                    }
+                                    if title_timer.elapsed() >= Duration::from_millis(250) {
+                                        window.set_title(&state.title_string());
+                                        title_timer = Instant::now();
+                                    }
+                                }
+                                Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                                    warn!("Surface lost — reconfigure");
+                                    gpu.resize(gpu.size);
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => {
+                                    error!("OOM");
+                                    elwt.exit();
+                                }
+                                Err(wgpu::SurfaceError::Timeout) => {
+                                    // Nothing can be shown right now (the window is hidden):
+                                    // wait a little instead of asking again at full speed.
+                                    std::thread::sleep(Duration::from_millis(8));
+                                }
+                            }
+                            window.request_redraw();
+                        }
                         WindowEvent::KeyboardInput {
                             event:
                                 KeyEvent {
@@ -139,36 +197,9 @@ pub(crate) fn run() {
                     }
                 }
 
-                Event::AboutToWait => {
-                    let now = Instant::now();
-                    if now.duration_since(last_frame) >= frame_period {
-                        last_frame = now;
-                        state.metrics.record_frame();
+                // Some platforms ignore a redraw request made before the loop starts.
+                Event::Resumed => window.request_redraw(),
 
-                        let result = match state.backend {
-                            Backend::Gpu => gpu.render_gpu(&state),
-                            Backend::Software => gpu.render_software(&state),
-                        };
-                        match result {
-                            Ok(()) => {}
-                            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                                warn!("Surface lost — reconfigure");
-                                gpu.resize(gpu.size);
-                            }
-                            Err(wgpu::SurfaceError::OutOfMemory) => {
-                                error!("OOM");
-                                elwt.exit();
-                            }
-                            Err(wgpu::SurfaceError::Timeout) => {}
-                        }
-                        state.advance_phase();
-
-                        if title_timer.elapsed() >= Duration::from_millis(250) {
-                            window.set_title(&state.title_string());
-                            title_timer = Instant::now();
-                        }
-                    }
-                }
                 _ => {}
             }
         })
