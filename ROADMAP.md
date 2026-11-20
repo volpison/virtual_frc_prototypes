@@ -17,7 +17,7 @@ A prototype that explores software temporal dithering on high-refresh monitors: 
 
 ## Now
 
-Step 3: pulling the pattern and dither maths into a core with unit tests, the first code that CI can really test. The list of [known issues](docs/technical/known-issues.md) is the backlog behind the steps below.
+Step 4: fixing the color pipeline (owning the rounding to 8 bits, flipping neighbouring codes). The list of [known issues](docs/technical/known-issues.md) is the backlog behind the steps below.
 
 ## Next
 
@@ -26,7 +26,7 @@ Each step is its own pull request. A step that only moves code changes no behavi
 0. ✅ Set the project up to the house rules.
 1. ✅ Format `src/main.rs` with rustfmt (pure formatting).
 2. ✅ Split `src/main.rs` into modules by responsibility (pure move, no behaviour change).
-3. Pull the pattern and dither maths into a core that knows nothing about windows or the GPU, with unit tests.
+3. ✅ Pull the flip-pattern and color maths into `src/frc/`, which knows nothing about windows or the GPU, with unit tests.
 4. Fix the color pipeline: own the rounding to 8 bits, and make the demo flip neighbouring codes instead of two distant colors.
 5. Pace the program by the monitor: advance the pattern once per frame actually shown, stop the busy loop, log frame-time spread and missed frames.
 6. Replace the duty-cycle and checkerboard demos with a spatiotemporal blue-noise dither.

@@ -22,6 +22,7 @@
 //!   Esc / Q    : quit
 
 mod app;
+mod frc;
 mod render;
 mod software;
 mod state;

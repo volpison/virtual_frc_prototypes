@@ -103,3 +103,9 @@ Left out: macOS, until someone uses it there.
 Decided: `src/main.rs` was cut into `app`, `state`, `software` and `render` (with `shaders` and `present` inside it) in one pull request that moves code and changes nothing else. Only `mod` and `use` lines and `pub(crate)` visibility were added; the moved code was checked line by line against the original.
 Why: the known issues all need changes inside these areas, and a fix is easy to review only once the area has its own file. Nothing could be compiled in the author's environment, so CI is the check that the move is complete.
 Left out: moving the pattern maths out of `state.rs` into a core (the next step), and renaming anything.
+
+## The pure rules live in `src/frc/`, tested in the same files (2026-11)
+
+Decided: the flip pattern and the color maths were taken out of `state.rs` into `src/frc/` (`pattern.rs`, `color.rs`), which uses no other crate. Their tests sit beside them under `#[cfg(test)]`. `state.rs` now calls them.
+Why: these are the rules the later steps will change most, and they can now be tested without a window, a GPU or a download. The extraction changes no behaviour: the old inline code and the new functions were compared on 12.7 million cases and agree on all. The module is not called `core`, because that clashes with Rust's own `core` crate.
+Left out: a `tests/` folder (a binary crate has no library to import; revisit when `frc` becomes a library crate), and moving `pack_bgra` into `frc` (it belongs with the rounding to 8 bits, roadmap step 4).
