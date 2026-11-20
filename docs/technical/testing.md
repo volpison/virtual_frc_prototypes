@@ -5,7 +5,7 @@
 ```
 cargo fmt --check                    # formatting
 cargo clippy --all-targets           # lints
-cargo test                           # unit tests (there are none yet)
+cargo test                           # unit tests of the rules in src/frc/
 cargo build --release                # the real build
 node --test "scripts/*.test.mjs"     # tests of the docs check and version script
 node scripts/check-docs.mjs          # links, heading links and the docs index
@@ -13,12 +13,14 @@ node scripts/check-docs.mjs          # links, heading links and the docs index
 
 ## What the tests cover
 
-Nothing in the Rust code is tested yet: the pure rules still sit in `src/state.rs` next to display code. Once the pure core exists ([roadmap](../../ROADMAP.md)), it gets the tests, mirrored under `tests/`:
+The pure rules in `src/frc/` are tested, with the tests in the same files under `#[cfg(test)]` (the program is a binary crate, so a separate `tests/` folder cannot reach them yet; it will once `frc` is a library crate):
 
-- the flip pattern over a whole cycle averages to the requested level;
-- no pattern holds one value longer than its allowed run;
-- the dither threshold values are evenly spread over a cycle;
-- rounding to 8 bits gives exactly the intended neighbouring codes.
+- `pattern.rs`: A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
+- `color.rs`: choosing A or B; the average of two colors is symmetric, lies between them, and black with white gives grey.
+
+Still without tests, because they are tied to the window or the GPU: `state.rs`, `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle, and rounding to 8 bits gives exactly the intended neighbouring codes.
+
+Since `frc` uses no other crate, its tests also run with plain `rustc --test` and no download.
 
 The window, the GPU path and the look of the effect cannot be checked by a test. They are checked by the build, and by a person running the program on a real monitor.
 

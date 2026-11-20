@@ -32,4 +32,5 @@ Found by reading the code in the first review (November 2026). Nothing here was 
 ## Display limits
 
 10. **The panel is not symmetric.** Rise and fall times differ, so the average brightness is not the plain mean of the two colors. The monitor's own dithering can also beat against ours. Verify on each panel with a photodiode or a high-speed camera before trusting any result.
-11. **The graphics driver may already dither** when reducing to 8 bits. Measure with it on and off.
+11. **The frame counter wraps.** `advance_phase` adds with wrap-around on a `u32`, which comes round after about 190 days at 240 frames a second. A cycle that does not divide 2^32 (3 and 5 frames, for example) jumps by a frame once at that moment. Harmless in practice; tie the phase to the cycle length when step 5 reworks pacing.
+12. **The graphics driver may already dither** when reducing to 8 bits. Measure with it on and off.

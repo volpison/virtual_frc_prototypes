@@ -2,6 +2,8 @@
 
 use std::time::{Duration, Instant};
 
+use crate::frc::{color, pattern};
+
 pub(crate) const DEFAULT_COLOR_A: [f64; 3] = [0.40, 0.70, 0.30];
 pub(crate) const DEFAULT_COLOR_B: [f64; 3] = [0.30, 0.55, 0.80];
 pub(crate) const STEP: f64 = 0.02;
@@ -111,36 +113,19 @@ impl AppState {
     }
 
     pub(crate) fn temporal_color(&self) -> [f32; 3] {
-        let use_a = if self.duty_a <= 1 {
-            self.frame_phase % 2 == 0
-        } else {
-            (self.frame_phase % (self.duty_a + 1)) < self.duty_a
-        };
-        let c = if use_a { self.color_a } else { self.color_b };
-        [c[0] as f32, c[1] as f32, c[2] as f32]
+        let use_a = pattern::shows_a(self.frame_phase, self.duty_a);
+        color::select(use_a, self.color_a, self.color_b)
     }
 
     pub(crate) fn static_average(&self) -> [f32; 3] {
-        [
-            ((self.color_a[0] + self.color_b[0]) * 0.5) as f32,
-            ((self.color_a[1] + self.color_b[1]) * 0.5) as f32,
-            ((self.color_a[2] + self.color_b[2]) * 0.5) as f32,
-        ]
+        color::average(self.color_a, self.color_b)
     }
 
     pub(crate) fn color_a_f32(&self) -> [f32; 3] {
-        [
-            self.color_a[0] as f32,
-            self.color_a[1] as f32,
-            self.color_a[2] as f32,
-        ]
+        color::to_f32(self.color_a)
     }
     pub(crate) fn color_b_f32(&self) -> [f32; 3] {
-        [
-            self.color_b[0] as f32,
-            self.color_b[1] as f32,
-            self.color_b[2] as f32,
-        ]
+        color::to_f32(self.color_b)
     }
 
     pub(crate) fn advance_phase(&mut self) {

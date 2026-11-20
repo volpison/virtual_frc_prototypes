@@ -10,15 +10,16 @@ The program is split by responsibility (the split was a pure move: no behaviour 
 |---|---|
 | `src/main.rs` | The crate's documentation (the keys), the module list and the entry point |
 | `src/app.rs` | The window, the key handling and the frame loop |
-| `src/state.rs` | What the program is doing: colors, flip pattern, view, drawing method, frame counts and the title text |
+| `src/state.rs` | What the program is doing: colors, flip pattern setting, view, drawing method, frame counts and the title text |
+| `src/frc/` | The pure rules, with unit tests: `pattern.rs` (which color a frame shows), `color.rs` (the average of two colors, choosing A or B) |
 | `src/software.rs` | The software path: filling a CPU buffer (no window, no GPU) |
 | `src/render/mod.rs` | The wgpu state: surface, both pipelines, resize and the two render paths |
 | `src/render/shaders.rs` | The two WGSL shaders |
 | `src/render/present.rs` | Choosing the present mode (vsync or not) |
 
-Dependencies point one way: `app` calls `state` and `render`; `render` uses `state` and `software`; `state` and `software` use neither the window nor the GPU.
+Dependencies point one way: `app` calls `state` and `render`; `render` uses `state` and `software`; `state` uses `frc`; `frc` and `software` use neither the window nor the GPU. `frc` uses no other crate at all, so its tests need nothing but the compiler.
 
-The pure rules (the flip pattern, the average of two colors) still sit in `state.rs` next to the title text. Pulling them into their own tested core is the next step on the roadmap.
+The module is called `frc`, not `core`, because `core` is the name of Rust's own standard-library crate and a module of that name causes ambiguous paths.
 
 ## Where it is going
 
@@ -31,8 +32,8 @@ The pure rules (the flip pattern, the average of two colors) still sit in `state
   platform               frame timing, fullscreen, refresh-rate and variable-refresh checks
 ```
 
-Still to come: `src/core/` for the pure maths (patterns, dither thresholds, color conversion) with unit tests in `tests/`, and `src/platform/` for operating-system specific timing and display queries. Later the core can become its own crate.
+Still to come: dither thresholds and the conversion of colors to 8 bits in `src/frc/` (roadmap steps 4 and 6), and `src/platform/` for operating-system specific timing and display queries. Later `frc` can become its own crate; its tests then move from the files into `tests/`.
 
 ## How to add a feature
 
-A new view today needs: an entry in `DisplayMode` (`state.rs`), a branch in the GPU shader (`render/shaders.rs`), a branch in `render_software` (`render/mod.rs`) with its fill in `software.rs`, and a key in `app.rs`. Each is one place in one responsibility, but four files for one idea is still a sign that the pattern logic should move into the core; record such changes in [the decision log](decisions.md).
+A new view today needs: an entry in `DisplayMode` (`state.rs`), a branch in the GPU shader (`render/shaders.rs`), a branch in `render_software` (`render/mod.rs`) with its fill in `software.rs`, and a key in `app.rs`. Each is one place in one responsibility, but four files for one idea is still a sign that the view logic should move into `frc`; record such changes in [the decision log](decisions.md). A new rule about colors or patterns goes in `src/frc/` with its test next to it, and uses no window or GPU type.
