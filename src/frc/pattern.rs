@@ -13,6 +13,17 @@ pub fn shows_a(phase: u32, duty_a: u32) -> bool {
     }
 }
 
+/// After this many frames the frame counter starts again from 0.
+///
+/// It is a multiple of every cycle length from 2 to 16 frames (it is 720,720 = 2^4 * 3^2 * 5 *
+/// 7 * 11 * 13), so the pattern carries on without a jump when the counter starts over.
+pub const PHASE_PERIOD: u32 = 720_720;
+
+/// The frame counter after `phase`, starting over at [`PHASE_PERIOD`].
+pub fn next_phase(phase: u32) -> u32 {
+    (phase + 1) % PHASE_PERIOD
+}
+
 /// The share of frames that show color A (0.0 to 1.0), for the same `duty_a` as [`shows_a`].
 ///
 /// 1:1 gives one half, 2:1 two thirds, 3:1 three quarters. This is the weight of A in the
@@ -50,6 +61,33 @@ mod tests {
             best = best.max(len);
         }
         best
+    }
+
+    #[test]
+    fn every_cycle_up_to_sixteen_divides_the_phase_period() {
+        for duty in 0..=15 {
+            assert_eq!(PHASE_PERIOD % cycle(duty), 0, "duty {duty}");
+        }
+    }
+
+    #[test]
+    fn the_pattern_carries_on_when_the_counter_starts_over() {
+        for duty in 0..=15 {
+            let last = PHASE_PERIOD - 1;
+            assert_eq!(next_phase(last), 0);
+            // the frame after the last one must show what the pattern says it should
+            assert_eq!(
+                shows_a(next_phase(last), duty),
+                shows_a(last + 1, duty),
+                "duty {duty}"
+            );
+        }
+    }
+
+    #[test]
+    fn next_phase_counts_up_by_one() {
+        assert_eq!(next_phase(0), 1);
+        assert_eq!(next_phase(41), 42);
     }
 
     #[test]

@@ -14,14 +14,15 @@ Found by reading the code in the first review (November 2026). Nothing here was 
 
 ## Timing
 
-5. **The pattern is not tied to what the monitor shows.**
-   - The phase advances per loop pass, also when a frame was not presented (`Timeout`, lost surface).
-   - Frames are held back by a software timer made from the reported refresh rate, which is often 143.98 and not 144.
-   - `Immediate` and `Mailbox` are not locked to vblank: frames can tear, drop or share a refresh.
-   - "FPS" counts loop passes, not frames shown. Missed frames and frame-time spread are what matter.
-   - In a window, the system compositor can retime frames. Fullscreen with direct flip is needed.
-   - Variable refresh breaks the averaging. The refresh rate is read once, so moving the window to another monitor leaves it stale.
-6. **The loop busy-waits.** `ControlFlow::Poll` keeps a core at 100% although `Fifo` already blocks. Request a redraw instead.
+5. **The pattern was not tied to what the monitor shows. Mostly fixed in step 5.**
+   - Fixed: the phase advanced per loop pass, also when a frame was not presented. It now advances only on a frame that was shown.
+   - Fixed: frames were held back by a software timer made from the reported refresh rate (often 143.98, not 144). Frames are now drawn one after the other and showing one waits for the monitor; there is no timer.
+   - Fixed: "FPS" counted loop passes. The title bar and a log line now count frames shown, and missed refreshes, using `frc::timing`.
+   - Fixed: the refresh rate was read once. It is read again when the window moves.
+   - Open: `Immediate` and `Mailbox` are not locked to vblank (frames can tear, drop or share a refresh). They stay as experiments; with vsync off the program now draws as fast as it can.
+   - Open (step 8): in a window, the system compositor can retime frames. Fullscreen with direct flip is needed.
+   - Open (step 8): variable refresh breaks the averaging and cannot be detected from here; the program should warn and the docs say to turn it off.
+6. **The loop busy-waited. Fixed in step 5.** It now sleeps between refreshes (`ControlFlow::Wait` and a chain of redraw requests).
 
 ## Code
 
@@ -32,5 +33,5 @@ Found by reading the code in the first review (November 2026). Nothing here was 
 ## Display limits
 
 10. **The panel is not symmetric.** Rise and fall times differ, so the average brightness is not the plain mean of the two colors. The monitor's own dithering can also beat against ours. Verify on each panel with a photodiode or a high-speed camera before trusting any result.
-11. **The frame counter wraps.** `advance_phase` adds with wrap-around on a `u32`, which comes round after about 190 days at 240 frames a second. A cycle that does not divide 2^32 (3 and 5 frames, for example) jumps by a frame once at that moment. Harmless in practice; tie the phase to the cycle length when step 5 reworks pacing.
+11. **The frame counter wrapped. Fixed in step 5.** It added with wrap-around on a `u32`, which came round after about 190 days at 240 frames a second, and a cycle that does not divide 2^32 (3 and 5 frames, for example) jumped once. The counter now starts over at 720,720, a multiple of every cycle from 2 to 16 frames, so the pattern carries on without a jump.
 12. **The graphics driver may already dither** when reducing to 8 bits. Measure with it on and off.

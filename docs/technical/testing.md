@@ -15,10 +15,11 @@ node scripts/check-docs.mjs          # links, heading links and the docs index
 
 The pure rules in `src/frc/` are tested, with the tests in the same files under `#[cfg(test)]` (the program is a binary crate, so a separate `tests/` folder cannot reach them yet; it will once `frc` is a library crate):
 
-- `pattern.rs`: the share of A matches the frames that show it (and has the known values 1/2, 2/3, 3/4); A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
+- `pattern.rs`: the frame counter starts over at a multiple of every cycle length, with no jump in the pattern; the share of A matches the frames that show it (and has the known values 1/2, 2/3, 3/4); A is shown `duty` times per cycle; the long-run share of A is duty/(duty+1); the pattern repeats; no color is held longer than its share; frame 0 shows A; a very large frame counter still works.
+- `timing.rs`: a refresh counts as missed from 1.5 periods on; steady frames give a clean report each second; a skipped refresh is counted and flagged; a long pause is not counted as lost frames; the wrong average rate is flagged; the percentile.
 - `color.rs`: the mix of two codes is made in light (half black and half white is code 188), gives back A or B at the ends, keeps equal colors, lies between the two and follows the share; sRGB encoding and decoding agree with known values and undo each other; every one of the 256 codes survives the trip through light and back; rounding never goes down as light goes up; dark colors get their own codes; the value handed to the card for a code puts exactly that code on screen for both kinds of surface; a pixel is packed in the right byte order.
 
-- `state.rs`: default colors one code apart, key steps and the 0 to 255 limits, the flipping side follows the pattern, the plain side follows the share, the title shows the codes.
+- `state.rs`: default colors one code apart, key steps and the 0 to 255 limits, the flipping side follows the pattern (also across the counter starting over), the plain side follows the share, the title shows the codes and the frame counts.
 
 Still without tests, because they are tied to the window or the GPU: `software.rs`, `render/` and `app.rs`. Planned for the pure core as it grows: the dither thresholds are evenly spread over a cycle.
 
