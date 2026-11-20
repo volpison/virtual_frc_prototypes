@@ -11,8 +11,8 @@ The program is split by responsibility (the split was a pure move: no behaviour 
 | `src/main.rs` | The crate's documentation (the keys), the module list and the entry point |
 | `src/app.rs` | The window, the key handling and the frame loop |
 | `src/state.rs` | What the program is doing: colors, flip pattern setting, view, drawing method, frame counts and the title text |
-| `src/frc/` | The pure rules, with unit tests: `pattern.rs` (which color a frame shows), `color.rs` (the average of two colors, choosing A or B) |
-| `src/software.rs` | The software path: filling a CPU buffer (no window, no GPU) |
+| `src/frc/` | The pure rules, with unit tests: `pattern.rs` (which color a frame shows), `color.rs` (the average of two colors, choosing A or B, sRGB encoding, rounding to an 8-bit code, packing a pixel) |
+| `src/software.rs` | The software path: filling a CPU buffer with the 8-bit codes of the colors (no window, no GPU) |
 | `src/render/mod.rs` | The wgpu state: surface, both pipelines, resize and the two render paths |
 | `src/render/shaders.rs` | The two WGSL shaders |
 | `src/render/present.rs` | Choosing the present mode (vsync or not) |

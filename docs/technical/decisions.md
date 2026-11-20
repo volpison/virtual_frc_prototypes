@@ -109,3 +109,15 @@ Left out: moving the pattern maths out of `state.rs` into a core (the next step)
 Decided: the flip pattern and the color maths were taken out of `state.rs` into `src/frc/` (`pattern.rs`, `color.rs`), which uses no other crate. Their tests sit beside them under `#[cfg(test)]`. `state.rs` now calls them.
 Why: these are the rules the later steps will change most, and they can now be tested without a window, a GPU or a download. The extraction changes no behaviour: the old inline code and the new functions were compared on 12.7 million cases and agree on all. The module is not called `core`, because that clashes with Rust's own `core` crate.
 Left out: a `tests/` folder (a binary crate has no library to import; revisit when `frc` becomes a library crate), and moving `pack_bgra` into `frc` (it belongs with the rounding to 8 bits, roadmap step 4).
+
+## The program rounds to 8 bits, once, and picks the surface to match (2026-11)
+
+Decided: `frc::color::to_code` (encode to sRGB, round to the nearest code) is the only place that rounds a color to 8 bits. The renderer prefers a surface that stores plain codes and hands it `code / 255`; if only an sRGB surface exists, it hands the light level of that code, so the same code comes out. The software path packs the same codes, and its texture is sRGB when the surface is, so the codes survive unchanged.
+Why: FRC needs to know exactly which two neighbouring codes reach the monitor. Before, the GPU path left the rounding to the card and the software path rounded light before encoding it, so the two paths disagreed and dark colors banded.
+Left out: a dither shader (roadmap step 6), and a 10-bit surface. The codes the GPU path shows can differ from before only by the card's own rounding at an exact halfway point.
+
+## Colors stay linear-light values until step 4b (2026-11)
+
+Decided: step 4a does not change what a color in the program means (linear light, 0.0 to 1.0, edited in steps of 0.02). Editing in 8-bit codes with neighbouring defaults is step 4b, its own pull request.
+Why: 4a then changes the pipeline without changing what the demo looks like, apart from the banding fix, and 4b is the visible redesign that needs a real monitor and a person to judge.
+Left out: converting the state to codes in the same pull request.
