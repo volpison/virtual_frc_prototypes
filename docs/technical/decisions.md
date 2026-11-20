@@ -97,3 +97,9 @@ Left out: dual licensing. Revisit if the core becomes a library that companies w
 Decided: the Rust jobs run on `windows-latest` and `ubuntu-latest`; macOS is not covered yet.
 Why: Windows is where high-refresh gaming monitors are mostly used; Linux is cheap and catches portability mistakes.
 Left out: macOS, until someone uses it there.
+
+## Split by responsibility before any fix (2026-11)
+
+Decided: `src/main.rs` was cut into `app`, `state`, `software` and `render` (with `shaders` and `present` inside it) in one pull request that moves code and changes nothing else. Only `mod` and `use` lines and `pub(crate)` visibility were added; the moved code was checked line by line against the original.
+Why: the known issues all need changes inside these areas, and a fix is easy to review only once the area has its own file. Nothing could be compiled in the author's environment, so CI is the check that the move is complete.
+Left out: moving the pattern maths out of `state.rs` into a core (the next step), and renaming anything.

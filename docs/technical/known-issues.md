@@ -1,6 +1,6 @@
 # Known issues
 
-Found by reading the code in the first review (November 2026). Nothing here was run on a real monitor: the code was read, not executed. Names refer to functions in `src/main.rs`. Each item becomes a roadmap step when it is taken up.
+Found by reading the code in the first review (November 2026). Nothing here was run on a real monitor: the code was read, not executed. Names refer to functions in `src/` (see [Architecture](architecture.md)). Each item becomes a roadmap step when it is taken up.
 
 ## About the idea
 

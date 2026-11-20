@@ -13,7 +13,7 @@ node scripts/check-docs.mjs          # links, heading links and the docs index
 
 ## What the tests cover
 
-Nothing in the Rust code is tested yet: the prototype is one file that mixes rules with window and GPU code. Once the pure core exists ([roadmap](../../ROADMAP.md)), it gets the tests, mirrored under `tests/`:
+Nothing in the Rust code is tested yet: the pure rules still sit in `src/state.rs` next to display code. Once the pure core exists ([roadmap](../../ROADMAP.md)), it gets the tests, mirrored under `tests/`:
 
 - the flip pattern over a whole cycle averages to the requested level;
 - no pattern holds one value longer than its allowed run;
