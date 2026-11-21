@@ -5,6 +5,7 @@ What changed for users, newest first. Format: [Keep a Changelog](https://keepach
 ## [Unreleased]
 
 ### Added
+- Key T in the gradient view switches the dithered half between the fixed pattern over the screen plus time ("ordered") and flipping in time only, so the whole screen flips together. The title bar shows which one is on.
 - A gradient test pattern (key G, or key M to reach it): a smooth ramp from color A to color B. The top half shows plain 8-bit steps, so it bands; the bottom half flips pixels between neighbouring codes, so the steps should blur into a smooth ramp. It is always drawn by the processor, whichever drawing method is chosen.
 - The title bar now shows how many monitor refreshes were missed (`missed:`), and the terminal prints a `Frame timing` warning when the frames do not keep up with the monitor.
 
@@ -18,6 +19,7 @@ What changed for users, newest first. Format: [Keep a Changelog](https://keepach
 - The list of keys in the README now matches the program: it adds M (view), B (drawing method), V (vsync) and the bracket keys, and no longer promises a key that does not exist.
 
 ### Fixed
+- The title bar says "Software" in the gradient view even when the drawing method is set to GPU, because the gradient is always drawn by the processor.
 - The drawing method is now called "Software" in the title bar, not "Software+SIMD": the program does not use hand-written SIMD.
 - The flipping no longer moves on when a frame was not shown (for example after the window was lost), and no longer jumps after about 190 days of running.
 - When the window moves to another monitor, the refresh rate is read again.

@@ -2,7 +2,7 @@
 
 use rayon::prelude::*;
 
-use crate::frc::gradient;
+use crate::frc::gradient::{self, Dither};
 
 /// Fill a whole buffer with a solid color using multi-threaded stores.
 /// On x86_64 we use wide stores where possible; otherwise scalar.
@@ -72,9 +72,10 @@ pub(crate) fn fill_gradient(
     from: [u8; 3],
     to: [u8; 3],
     phase: u32,
+    dither: Dither,
 ) {
     let w = (width as usize).max(1);
     buf.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
-        gradient::fill_row(row, y as u32, height, from, to, phase);
+        gradient::fill_row(row, y as u32, height, from, to, phase, dither);
     });
 }

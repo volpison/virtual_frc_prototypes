@@ -1,5 +1,6 @@
 //! What the program is doing right now: colors, flip pattern, view, drawing method and frame counts.
 
+use crate::frc::gradient::Dither;
 use crate::frc::timing::FrameTimer;
 use crate::frc::{color, pattern};
 
@@ -75,6 +76,7 @@ pub(crate) struct AppState {
     pub(crate) mode: DisplayMode,
     pub(crate) backend: Backend,
     pub(crate) cell_size: u32,
+    pub(crate) gradient_dither: Dither,
 }
 
 impl AppState {
@@ -91,6 +93,30 @@ impl AppState {
             mode: DisplayMode::SideBySide,
             backend: Backend::Gpu,
             cell_size: 8,
+            gradient_dither: Dither::Ordered,
+        }
+    }
+
+    /// True when the processor draws this frame: the software method, and always the gradient.
+    pub(crate) fn draws_on_cpu(&self) -> bool {
+        self.backend == Backend::Software || self.mode == DisplayMode::Gradient
+    }
+
+    /// What is really drawing, for the title bar.
+    pub(crate) fn drawing_name(&self) -> &'static str {
+        if self.draws_on_cpu() {
+            Backend::Software.name()
+        } else {
+            Backend::Gpu.name()
+        }
+    }
+
+    /// The view's name, with the dither style added for the gradient.
+    pub(crate) fn view_name(&self) -> String {
+        if self.mode == DisplayMode::Gradient {
+            format!("{} ({})", self.mode.name(), self.gradient_dither.name())
+        } else {
+            self.mode.name().to_string()
         }
     }
 
@@ -129,9 +155,9 @@ impl AppState {
         format!(
             "VirtualFRC  |  {:.0} FPS  |  {}  |  {}  |  {}  |  edit {}  |  A {},{},{}  B {},{},{}  |  duty {}:1  |  cell {}  |  frames:{}  missed:{}",
             self.metrics.fps(),
-            self.backend.name(),
+            self.drawing_name(),
             present,
-            self.mode.name(),
+            self.view_name(),
             which,
             self.color_a[0],
             self.color_a[1],
@@ -272,5 +298,26 @@ mod tests {
         for ch in 0..3 {
             assert_eq!(GRADIENT_COLOR_B[ch] - GRADIENT_COLOR_A[ch], 16);
         }
+    }
+
+    #[test]
+    fn the_title_says_the_processor_draws_the_gradient_even_with_the_gpu_method() {
+        let mut s = state();
+        s.backend = Backend::Gpu;
+        s.mode = DisplayMode::Gradient;
+        assert!(s.draws_on_cpu());
+        let title = s.title_string();
+        assert!(title.contains("Software"), "{title}");
+        assert!(!title.contains("|  GPU  |"), "{title}");
+        assert!(title.contains("(ordered)"), "{title}");
+        s.gradient_dither = s.gradient_dither.next();
+        assert!(s.title_string().contains("(time only)"));
+    }
+
+    #[test]
+    fn the_gpu_draws_the_other_views_with_the_gpu_method() {
+        let s = state();
+        assert!(!s.draws_on_cpu());
+        assert!(s.title_string().contains("|  GPU  |"));
     }
 }

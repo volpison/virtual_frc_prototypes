@@ -150,4 +150,10 @@ Left out: longer cycles than 16 frames; revisit with the dither step.
 
 Decided: the gradient view ramps each channel from color A to color B across the window. The top half rounds to the nearest code (bands); the bottom half rounds up or down by a 4 by 4 Bayer threshold that shifts by four steps each frame, so the pattern repeats every 4 frames (4 divides 720,720). It lives in `src/frc/gradient.rs` and is drawn by the CPU path in both drawing methods.
 Why: a gradient shows the effect to the eye far better than two nearly equal flat colors. An ordered dither is simple and exactly testable (a block averages to the value on every frame). A CPU version needs no new shader, and a shader error only shows at run time, which cannot be checked here.
-Left out: a GPU version (revisit with step 7), blue noise (step 7), a switch for time-only flipping, and making the plain half and the dithered half share light-space averaging (the ramp is in codes, not light).
+Left out: a GPU version (revisit with step 7), blue noise (step 7), and making the plain half and the dithered half share light-space averaging (the ramp is in codes, not light).
+
+## The gradient has a time-only dither, and the title names what draws (2026-11)
+
+Decided: key T switches the gradient's bottom half between the ordered dither and a time-only one (one number for the whole screen per frame: 2, 6, 10, 14 over four frames). The title bar shows the dither style, and says "Software" whenever the processor draws, which includes the gradient with the GPU method selected. `AppState::draws_on_cpu` is the single place that decides it.
+Why: the ordered pattern mixes space and time, so it cannot tell whether the monitor's temporal behaviour works on its own. The title said "GPU" for a frame the processor drew.
+Left out: the title still shows the chosen method nowhere when the gradient overrides it; revisit if that confuses.
