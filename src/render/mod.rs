@@ -520,6 +520,7 @@ impl<'a> GpuState<'a> {
                     state.color_a,
                     state.color_b,
                     state.frame_phase,
+                    state.gradient_dither,
                 );
             }
         }

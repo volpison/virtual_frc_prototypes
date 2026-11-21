@@ -14,8 +14,8 @@ use winit::{
 
 use crate::render::GpuState;
 use crate::state::{
-    AppState, Backend, DisplayMode, COARSE_STEP, DEFAULT_COLOR_A, DEFAULT_COLOR_B,
-    GRADIENT_COLOR_A, GRADIENT_COLOR_B, STEP,
+    AppState, DisplayMode, COARSE_STEP, DEFAULT_COLOR_A, DEFAULT_COLOR_B, GRADIENT_COLOR_A,
+    GRADIENT_COLOR_B, STEP,
 };
 
 pub(crate) fn run() {
@@ -87,9 +87,7 @@ pub(crate) fn run() {
                         }
                         WindowEvent::RedrawRequested => {
                             // The gradient is always drawn by the CPU path (no shader for it).
-                            let on_cpu = state.backend == Backend::Software
-                                || state.mode == DisplayMode::Gradient;
-                            let result = if on_cpu {
+                            let result = if state.draws_on_cpu() {
                                 gpu.render_software(&state)
                             } else {
                                 gpu.render_gpu(&state)
@@ -150,6 +148,10 @@ pub(crate) fn run() {
                                     "m" | "M" => {
                                         state.mode = state.mode.next();
                                         info!("Mode → {}", state.mode.name());
+                                    }
+                                    "t" | "T" => {
+                                        state.gradient_dither = state.gradient_dither.next();
+                                        info!("Gradient dither → {}", state.gradient_dither.name());
                                     }
                                     "g" | "G" => {
                                         state.color_a = GRADIENT_COLOR_A;
