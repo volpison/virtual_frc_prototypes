@@ -13,6 +13,7 @@
 //! Controls:
 //!   M          : cycle display mode
 //!   G          : gradient test pattern with a grey ramp
+//!   T          : gradient dither: ordered (space + time) ↔ time only
 //!   B          : toggle GPU ↔ Software backend
 //!   Arrow/WASD : adjust selected color (R/G)
 //!   E / C      : adjust Blue

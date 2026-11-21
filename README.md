@@ -34,6 +34,7 @@ The same command works on Windows, Linux and macOS.
 | I K / J L / U | Change green / red / blue of color B directly (also with Shift) |
 | M | Next view (side-by-side, full flip, checkerboard, gradient) |
 | G | Gradient test pattern with a grey ramp (sets both colors) |
+| T | In the gradient view: dither in space and time (ordered) ↔ in time only |
 | B | Switch drawing method (GPU or Software) |
 | 1 / 2 / 3 | Flip pattern 1:1, 2:1 or 3:1 |
 | V | Vsync on or off (off draws as fast as possible, which loses the effect) |
